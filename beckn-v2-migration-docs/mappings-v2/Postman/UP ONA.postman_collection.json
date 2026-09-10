@@ -1,0 +1,463 @@
+{
+	"info": {
+		"_postman_id": "63705565-e070-4935-b16c-d0c04edf4b91",
+		"name": "UP ONA",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "49679286"
+	},
+	"item": [
+		{
+			"name": "Agri-Procurement",
+			"item": [
+				{
+					"name": "discover",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"context\": {\n    \"domain\": \"upagrees.in/agri-procurement\",\n    \"action\": \"discover\",\n    \"bap_id\": \"{{bap_id}}\",\n    \"bap_uri\": \"{{bap_uri}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"transaction_id\": \"{{$randomUUID}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n   \"message\": {\n    \"intent\": {\n      \"item\": {\n        \"descriptor\": {\n          \"name\": \"paddy\"\n        }\n      }\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{bap_adapter_url}}/discover",
+							"host": [
+								"{{bap_adapter_url}}"
+							],
+							"path": [
+								"discover"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "publish",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"context\": {\n    \"domain\": \"upagrees.in/agri-procurement\",\n    \"action\": \"catalog/publish\",\n    \"bpp_id\": \"{{bpp_id}}\",\n    \"bpp_uri\": \"{{bpp_uri}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"transaction_id\": \"{{$randomUUID}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"catalog\": {\n      \"descriptor\": {\n        \"name\": \"Market Linkage Offers\"\n      },\n      \"providers\": [\n        {\n          \"id\": \"agrihub-provider-001\",\n          \"descriptor\": {\n            \"name\": \"AgriHub Procurement Solutions\"\n          },\n          \"items\": [\n            {\n              \"id\": \"wheat-faq-1\",\n              \"descriptor\": {\n                \"name\": \"Wheat (Fair Average Quality)\"\n              },\n              \"price\": {\n                \"currency\": \"INR\",\n                \"minimum_value\": \"2100\",\n                \"maximum_value\": \"2200\",\n                \"updated_at\": \"2025-11-09T18:30:00Z\",\n                \"tags\": [\n                  {\n                    \"name\": \"unit\",\n                    \"value\": \"/quintal\"\n                  }\n                ]\n              },\n              \"fulfillment_ids\": [\n                \"cc-lko-1\"\n              ]\n            },\n            {\n              \"id\": \"maize-faq-1\",\n              \"descriptor\": {\n                \"name\": \"Maize (Fair Average Quality)\"\n              },\n              \"price\": {\n                \"currency\": \"INR\",\n                \"minimum_value\": \"1900\",\n                \"maximum_value\": \"2000\",\n                \"updated_at\": \"2025-11-09T18:30:00Z\",\n                \"tags\": [\n                  {\n                    \"name\": \"unit\",\n                    \"value\": \"/quintal\"\n                  }\n                ]\n              },\n              \"fulfillment_ids\": [\n                \"cc-patna-1\"\n              ]\n            },\n            {\n              \"id\": \"paddy-faq-1\",\n              \"descriptor\": {\n                \"name\": \"Paddy (Grade A)\"\n              },\n              \"price\": {\n                \"currency\": \"INR\",\n                \"minimum_value\": \"2200\",\n                \"maximum_value\": \"2300\",\n                \"updated_at\": \"2025-11-09T18:30:00Z\",\n                \"tags\": [\n                  {\n                    \"name\": \"unit\",\n                    \"value\": \"/quintal\"\n                  }\n                ]\n              },\n              \"fulfillment_ids\": [\n                \"cc-indore-1\"\n              ]\n            }\n          ],\n          \"fulfillments\": [\n            {\n              \"id\": \"cc-lko-1\",\n              \"stops\": [\n                {\n                  \"type\": \"end\",\n                  \"location\": {\n                    \"descriptor\": {\n                      \"name\": \"Lucknow Collection Hub\"\n                    },\n                    \"gps\": \"26.8500,80.9500\",\n                    \"address\": {\n                      \"district\": \"Lucknow\",\n                      \"state\": \"Uttar Pradesh\"\n                    }\n                  },\n                  \"time\": {\n                    \"label\": \"Operating Hours\",\n                    \"range\": {\n                      \"start\": \"2025-06-27T09:00:00+0530\",\n                      \"end\": \"2025-06-27T17:00:00+0530\"\n                    },\n                    \"days\": \"mon,tue,wed,thu,fri\"\n                  }\n                }\n              ]\n            },\n            {\n              \"id\": \"cc-patna-1\",\n              \"stops\": [\n                {\n                  \"type\": \"end\",\n                  \"location\": {\n                    \"descriptor\": {\n                      \"name\": \"Patna Collection Hub\"\n                    },\n                    \"gps\": \"25.5941,85.1376\",\n                    \"address\": {\n                      \"district\": \"Patna\",\n                      \"state\": \"Bihar\"\n                    }\n                  },\n                  \"time\": {\n                    \"label\": \"Operating Hours\",\n                    \"range\": {\n                      \"start\": \"2025-06-27T09:00:00+0530\",\n                      \"end\": \"2025-06-27T17:00:00+0530\"\n                    },\n                    \"days\": \"mon,tue,wed,thu,fri\"\n                  }\n                }\n              ]\n            },\n            {\n              \"id\": \"cc-indore-1\",\n              \"stops\": [\n                {\n                  \"type\": \"end\",\n                  \"location\": {\n                    \"descriptor\": {\n                      \"name\": \"Indore Collection Hub\"\n                    },\n                    \"gps\": \"22.7196,75.8577\",\n                    \"address\": {\n                      \"district\": \"Indore\",\n                      \"state\": \"Madhya Pradesh\"\n                    }\n                  },\n                  \"time\": {\n                    \"label\": \"Operating Hours\",\n                    \"range\": {\n                      \"start\": \"2025-06-27T09:00:00+0530\",\n                      \"end\": \"2025-06-27T17:00:00+0530\"\n                    },\n                    \"days\": \"mon,tue,wed,thu,fri\"\n                  }\n                }\n              ]\n            }\n          ]\n        }\n      ]\n    }\n  }\n}\n\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{bpp_adapter_url}}/publish",
+							"host": [
+								"{{bpp_adapter_url}}"
+							],
+							"path": [
+								"publish"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "on_discover",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"context\": {\n        \"action\": \"on_discover\",\n        \"bapId\": \"bap.example.com\",\n        \"bapUri\": \"http://onix-bap:8081/bap/receiver\",\n        \"messageId\": \"83dfe7a5-aff3-405d-a64d-6f2252b4a654\",\n        \"networkId\": \"upagrees.in/agri-procurement\",\n        \"timestamp\": \"2026-05-28T10:29:23.480Z\",\n        \"transactionId\": \"10dce2d5-4100-420c-9154-2ca7ec83c3d6\",\n        \"ttl\": \"PT30S\",\n        \"version\": \"2.0.0\"\n    },\n    \"message\": {\n    \"catalogs\": [\n      {\n        \"id\": \"catalog-agrihub-provider-001\",\n        \"descriptor\": {\n          \"name\": \"Market Linkage Offers\"\n        },\n        \"provider\": {\n          \"id\": \"agrihub-provider-001\",\n          \"descriptor\": {\n            \"name\": \"AgriHub Procurement Solutions\"\n          }\n        },\n        \"resources\": [\n          {\n            \"id\": \"paddy-faq-1\",\n            \"descriptor\": {\n              \"name\": \"Paddy (Grade A)\"\n            },\n            \"resourceAttributes\": {\n              \"@context\": \"https://schema.beckn.io/Attributes/v2.0/context.jsonld\",\n              \"@type\": \"Attributes\",\n              \"entitlementIds\": [\n                {\n                  \"code\": \"fulfillmentIds\",\n                  \"values\": [\n                    \"cc-indore-1\"\n                  ]\n                }\n              ]\n            }\n          }\n        ],\n        \"offers\": [\n          {\n            \"considerations\": [\n              {\n                \"considerationAttributes\": {\n                  \"@context\": \"https://schema.beckn.io/Attributes/v2.0/context.jsonld\",\n                  \"@type\": \"Attributes\",\n                  \"currency\": \"INR\",\n                  \"maximumValue\": \"2300\",\n                  \"minimumValue\": \"2200\",\n                  \"unit\": \"/quintal\",\n                  \"updatedAt\": \"2025-11-09T18:30:00Z\"\n                },\n                \"id\": \"consideration-paddy-faq-1-cost\",\n                \"status\": {\n                  \"code\": \"DRAFT\"\n                }\n              }\n            ],\n            \"descriptor\": {\n              \"name\": \"Paddy (Grade A)\"\n            },\n            \"id\": \"offer-paddy-faq-1\",\n            \"offerAttributes\": {\n              \"@context\": \"https://schema.beckn.io/Attributes/v2.0/context.jsonld\",\n              \"@type\": \"Attributes\",\n              \"fulfillmentDistrict\": \"Indore\",\n              \"fulfillmentGeo\": [\n                75.8577,\n                22.7196\n              ],\n              \"fulfillmentGps\": \"22.7196,75.8577\",\n              \"fulfillmentId\": \"cc-indore-1\",\n              \"fulfillmentName\": \"Indore Collection Hub\",\n              \"fulfillmentRegion\": \"Madhya Pradesh\",\n              \"fulfillmentTime\": {\n                \"days\": \"mon,tue,wed,thu,fri\",\n                \"label\": \"Operating Hours\",\n                \"range\": {\n                  \"start\": \"2025-06-27T09:00:00+0530\",\n                  \"end\": \"2025-06-27T17:00:00+0530\"\n                }\n              }\n            },\n            \"resourceIds\": [\n              \"paddy-faq-1\"\n            ]\n          }\n        ]\n      }\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8081/bap/receiver/on_discover",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8081",
+							"path": [
+								"bap",
+								"receiver",
+								"on_discover"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Agri-Scheme",
+			"item": [
+				{
+					"name": "publish",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"context\": {\n    \"domain\": \"upagrees.in/govt-schemes\",\n    \"action\": \"catalog/publish\",\n    \"bpp_id\": \"{{bpp_id}}\",\n    \"bpp_uri\": \"{{bpp_uri}}\",\n    \"transaction_id\": \"{{transaction_id}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"catalog\": {\n      \"descriptor\": {\n        \"name\": \"Haqdarshak Government Schemes\"\n      },\n      \"providers\": [\n        {\n          \"id\": \"PM00006C\",\n          \"descriptor\": {\n            \"name\": \"Ministry of Agriculture\"\n          },\n          \"categories\": [\n            {\n              \"id\": \"PM0001MX\",\n              \"descriptor\": {\n                \"code\": \"agriculture-(including-loans)\",\n                \"name\": \"Agriculture (Including loans)\"\n              }\n            }\n          ],\n          \"locations\": [\n            {\n              \"id\": \"35\",\n              \"state\": {\n                \"code\": \"IN-AN\",\n                \"name\": \"ANDAMAN AND NICOBAR ISLANDS\"\n              },\n              \"country\": {\n                \"code\": \"IN\",\n                \"name\": \"India\"\n              }\n            },\n            {\n              \"id\": \"28\",\n              \"state\": {\n                \"code\": \"IN-AP\",\n                \"name\": \"ANDHRA PRADESH\"\n              },\n              \"country\": {\n                \"code\": \"IN\",\n                \"name\": \"India\"\n              }\n            }\n          ],\n          \"items\": [\n            {\n              \"id\": \"SH00068Q\",\n              \"descriptor\": {\n                \"name\": \"Pradhan Mantri Kisan Samman Nidhi Yojana (Central)\",\n                \"long_desc\": \"This scheme provides financial assistance (\\u20b9 6000 per year in three installments) to farmer families having cultivable land to increase crop production. The scheme aims to supplement the financial needs of the farmers in procuring various inputs to ensure proper crop health and appropriate yields, commensurate with the anticipated farm income.\"\n              },\n              \"price\": {\n                \"currency\": \"INR\",\n                \"value\": \"0\"\n              },\n              \"rateable\": true,\n              \"tags\": [\n                {\n                  \"display\": true,\n                  \"descriptor\": {\n                    \"code\": \"target-beneficiary-type\",\n                    \"name\": \"Target beneficiary type\"\n                  },\n                  \"list\": [\n                    {\n                      \"descriptor\": {\n                        \"code\": \"Ind\",\n                        \"name\": \"Individual\"\n                      },\n                      \"display\": true\n                    }\n                  ]\n                },\n                {\n                  \"display\": true,\n                  \"descriptor\": {\n                    \"code\": \"funding-model\",\n                    \"name\": \"Funding model\"\n                  },\n                  \"list\": [\n                    {\n                      \"descriptor\": {\n                        \"code\": \"PM000024\",\n                        \"name\": \"Central Sector Scheme\",\n                        \"longDescription\": \"\"\n                      },\n                      \"display\": true\n                    }\n                  ]\n                },\n                {\n                  \"display\": true,\n                  \"descriptor\": {\n                    \"code\": \"benefit\",\n                    \"name\": \"Benefit\"\n                  },\n                  \"list\": [\n                    {\n                      \"descriptor\": {\n                        \"code\": \"Farmers\",\n                        \"name\": \"Farmers\"\n                      },\n                      \"value\": \"6000 per year in three equal installment\",\n                      \"display\": true\n                    }\n                  ]\n                },\n                {\n                  \"display\": true,\n                  \"descriptor\": {\n                    \"code\": \"short-benefit\",\n                    \"name\": \"Short Benefit\"\n                  },\n                  \"list\": [\n                    {\n                      \"descriptor\": {\n                        \"code\": \"short-benefit\",\n                        \"name\": \"Short Benefit\"\n                      },\n                      \"value\": \"\\u20b9 6000 per year in three installments\",\n                      \"display\": true\n                    }\n                  ]\n                },\n                {\n                  \"display\": true,\n                  \"descriptor\": {\n                    \"code\": \"required-docs\",\n                    \"name\": \"Required documents\"\n                  },\n                  \"list\": [\n                    {\n                      \"descriptor\": {\n                        \"code\": \"mandatory-doc\",\n                        \"name\": \"Mandatory document\",\n                        \"short_description\": \"Proof of Identity\"\n                      },\n                      \"value\": \"Aadhaar Card (Central)\",\n                      \"display\": true\n                    },\n                    {\n                      \"descriptor\": {\n                        \"code\": \"mandatory-doc\",\n                        \"name\": \"Mandatory document\",\n                        \"short_description\": \"Proof of Bank Account\"\n                      },\n                      \"value\": \"Bank Account Passbook\",\n                      \"display\": true\n                    },\n                    {\n                      \"descriptor\": {\n                        \"code\": \"optional-doc\",\n                        \"name\": \"Optional document\",\n                        \"short_description\": \"Proof of Property Holding\"\n                      },\n                      \"value\": \"Land ownership right document\",\n                      \"display\": true\n                    },\n                    {\n                      \"descriptor\": {\n                        \"code\": \"optional-doc\",\n                        \"name\": \"Optional document\",\n                        \"short_description\": \"Proof of Property Holding\"\n                      },\n                      \"value\": \"Khasra / Khata / Khatoni number\",\n                      \"display\": true\n                    }\n                  ]\n                },\n                {\n                  \"display\": true,\n                  \"descriptor\": {\n                    \"code\": \"documentsListText\",\n                    \"name\": \"documents List Text\"\n                  },\n                  \"list\": [\n                    {\n                      \"descriptor\": {\n                        \"code\": \"documentsListText\",\n                        \"name\": \"documents List Text\"\n                      },\n                      \"value\": \"Mandatory document: Aadhaar Card (Central) (Proof of Identity), Bank Account Passbook (Proof of Bank Account)\\nOptional document: Land ownership right document (Proof of Property Holding), Khasra / Khata / Khatoni number (Proof of Property Holding)\",\n                      \"display\": true\n                    }\n                  ]\n                },\n                {\n                  \"display\": true,\n                  \"descriptor\": {\n                    \"code\": \"economic-eligibility\",\n                    \"name\": \"Economic eligibility\"\n                  },\n                  \"list\": [\n                    {\n                      \"descriptor\": {\n                        \"code\": \"CT0001AJ\",\n                        \"name\": \"Do you or any of your family members own any land?\"\n                      },\n                      \"value\": \"= Yes - for agriculture\",\n                      \"display\": true\n                    },\n                    {\n                      \"descriptor\": {\n                        \"code\": \"CT0001U6\",\n                        \"name\": \"Are/were you/ any of your family members employed by a government or semi-government body?\"\n                      },\n                      \"value\": \"= No\",\n                      \"display\": true\n                    },\n                    {\n                      \"descriptor\": {\n                        \"code\": \"CT000015\",\n                        \"name\": \"Nature of Job\"\n                      },\n                      \"value\": \"= Farmer\",\n                      \"display\": true\n                    },\n                    {\n                      \"descriptor\": {\n                        \"code\": \"CT0006C2\",\n                        \"name\": \"Are you or any of your family member was a income tax payee in last assessment year?\"\n                      },\n                      \"value\": \"= No\",\n                      \"display\": true\n                    }\n                  ]\n                },\n                {\n                  \"display\": true,\n                  \"descriptor\": {\n                    \"code\": \"demographic-eligibility\",\n                    \"name\": \"Demographic eligibility\"\n                  },\n                  \"list\": [\n                    {\n                      \"descriptor\": {\n                        \"code\": \"CT000031\",\n                        \"name\": \"What is your age?\"\n                      },\n                      \"value\": \">= 18\",\n                      \"display\": true\n                    }\n                  ]\n                },\n                {\n                  \"display\": true,\n                  \"descriptor\": {\n                    \"code\": \"eligibilityText\",\n                    \"name\": \"eligibility Text\"\n                  },\n                  \"list\": [\n                    {\n                      \"descriptor\": {\n                        \"code\": \"eligibilityText\",\n                        \"name\": \"eligibility Text\"\n                      },\n                      \"value\": \"Economic eligibility: Do you or any of your family members own any land?: = Yes - for agriculture; Are/were you/ any of your family members employed by a government or semi-government body?: = No; Nature of Job: = Farmer; Are you or any of your family member was a income tax payee in last assessment year?: = No\\nDemographic eligibility: What is your age?: >= 18\",\n                      \"display\": true\n                    }\n                  ]\n                }\n              ],\n              \"category_ids\": [\n                \"PM0001MX\"\n              ],\n              \"location_ids\": [\n                \"28\",\n                \"12\",\n                \"18\",\n                \"10\",\n                \"22\",\n                \"30\",\n                \"24\",\n                \"6\",\n                \"2\",\n                \"1\",\n                \"20\",\n                \"29\",\n                \"32\",\n                \"23\",\n                \"27\",\n                \"14\",\n                \"17\",\n                \"15\",\n                \"13\",\n                \"21\",\n                \"3\",\n                \"8\",\n                \"11\",\n                \"33\",\n                \"36\",\n                \"16\",\n                \"5\",\n                \"9\",\n                \"19\",\n                \"35\",\n                \"4\",\n                \"38\",\n                \"7\",\n                \"31\",\n                \"34\",\n                \"37\"\n              ],\n              \"time\": {\n                \"duration\": \"\"\n              },\n              \"rating\": \"\"\n            }\n          ],\n          \"rateable\": true,\n          \"rating\": \"\"\n        }\n      ]\n    }\n  }\n\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{bpp_adapter_url}}/publish",
+							"host": [
+								"{{bpp_adapter_url}}"
+							],
+							"path": [
+								"publish"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "on_discover",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"context\": {\n        \"action\": \"on_discover\",\n        \"bapId\": \"bap.example.com\",\n        \"bapUri\": \"http://onix-bap:8081/bap/receiver\",\n        \"messageId\": \"4828e7e4-1c17-41c5-a0e7-3631fbd693c7\",\n        \"networkId\": \"upagrees.in/govt-schemes\",\n        \"timestamp\": \"2026-05-29T06:42:47.513Z\",\n        \"transactionId\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n        \"ttl\": \"PT30S\",\n        \"version\": \"2.0.0\"\n    },\n    \"message\": {\n        \"catalogs\": [\n            {\n                \"id\": \"catalog-PM00006C\",\n                \"descriptor\": {\n                    \"name\": \"Haqdarshak Government Schemes\"\n                },\n                \"provider\": {\n                    \"id\": \"PM00006C\",\n                    \"descriptor\": {\n                        \"name\": \"Ministry of Agriculture\"\n                    }\n                },\n                \"resources\": [\n                    {\n                        \"id\": \"SH00068Q\",\n                        \"descriptor\": {\n                            \"name\": \"Pradhan Mantri Kisan Samman Nidhi Yojana (Central)\",\n                            \"longDesc\": \"This scheme provides financial assistance (₹ 6000 per year in three installments) to farmer families having cultivable land to increase crop production. The scheme aims to supplement the financial needs of the farmers in procuring various inputs to ensure proper crop health and appropriate yields, commensurate with the anticipated farm income.\"\n                        },\n                        \"resourceAttributes\": {\n                            \"@context\": \"https://schema.beckn.io/Attributes/v2.0/context.jsonld\",\n                            \"@type\": \"Attributes\",\n                            \"entitlementIds\": [\n                                {\n                                    \"categoryCode\": \"agriculture-(including-loans)\",\n                                    \"categoryName\": \"Agriculture (Including loans)\",\n                                    \"code\": \"categoryId\",\n                                    \"value\": \"PM0001MX\"\n                                },\n                                {\n                                    \"code\": \"rateable\",\n                                    \"value\": \"true\"\n                                },\n                                {\n                                    \"code\": \"rating\",\n                                    \"value\": \"\"\n                                },\n                                {\n                                    \"code\": \"duration\",\n                                    \"value\": \"\"\n                                },\n                                {\n                                    \"code\": \"documentsListText\",\n                                    \"value\": \"Mandatory document: Aadhaar Card (Central) (Proof of Identity), Bank Account Passbook (Proof of Bank Account)\\nOptional document: Land ownership right document (Proof of Property Holding), Khasra / Khata / Khatoni number (Proof of Property Holding)\"\n                                },\n                                {\n                                    \"code\": \"eligibilityText\",\n                                    \"value\": \"Economic eligibility: Do you or any of your family members own any land?: = Yes - for agriculture; Are/were you/ any of your family members employed by a government or semi-government body?: = No; Nature of Job: = Farmer; Are you or any of your family member was a income tax payee in last assessment year?: = No\\nDemographic eligibility: What is your age?: >= 18\"\n                                },\n                                {\n                                    \"code\": \"targetBeneficiaryType\",\n                                    \"value\": \"Individual\",\n                                    \"valueCode\": \"Ind\"\n                                },\n                                {\n                                    \"code\": \"fundingModel\",\n                                    \"longDescription\": \"\",\n                                    \"value\": \"Central Sector Scheme\",\n                                    \"valueCode\": \"PM000024\"\n                                },\n                                {\n                                    \"code\": \"benefitFor\",\n                                    \"value\": \"Farmers\"\n                                },\n                                {\n                                    \"code\": \"benefitValue\",\n                                    \"value\": \"6000 per year in three equal installment\"\n                                },\n                                {\n                                    \"code\": \"shortBenefit\",\n                                    \"value\": \"₹ 6000 per year in three installments\"\n                                },\n                                {\n                                    \"code\": \"locationIds\",\n                                    \"values\": [\n                                        \"28\",\n                                        \"12\",\n                                        \"18\",\n                                        \"10\",\n                                        \"22\",\n                                        \"30\",\n                                        \"24\",\n                                        \"6\",\n                                        \"2\",\n                                        \"1\",\n                                        \"20\",\n                                        \"29\",\n                                        \"32\",\n                                        \"23\",\n                                        \"27\",\n                                        \"14\",\n                                        \"17\",\n                                        \"15\",\n                                        \"13\",\n                                        \"21\",\n                                        \"3\",\n                                        \"8\",\n                                        \"11\",\n                                        \"33\",\n                                        \"36\",\n                                        \"16\",\n                                        \"5\",\n                                        \"9\",\n                                        \"19\",\n                                        \"35\",\n                                        \"4\",\n                                        \"38\",\n                                        \"7\",\n                                        \"31\",\n                                        \"34\",\n                                        \"37\"\n                                    ]\n                                },\n                                {\n                                    \"code\": \"requiredDoc\",\n                                    \"docType\": \"mandatory\",\n                                    \"purpose\": \"Proof of Identity\",\n                                    \"value\": \"Aadhaar Card (Central)\"\n                                },\n                                {\n                                    \"code\": \"requiredDoc\",\n                                    \"docType\": \"mandatory\",\n                                    \"purpose\": \"Proof of Bank Account\",\n                                    \"value\": \"Bank Account Passbook\"\n                                },\n                                {\n                                    \"code\": \"requiredDoc\",\n                                    \"docType\": \"optional\",\n                                    \"purpose\": \"Proof of Property Holding\",\n                                    \"value\": \"Land ownership right document\"\n                                },\n                                {\n                                    \"code\": \"requiredDoc\",\n                                    \"docType\": \"optional\",\n                                    \"purpose\": \"Proof of Property Holding\",\n                                    \"value\": \"Khasra / Khata / Khatoni number\"\n                                },\n                                {\n                                    \"code\": \"economicEligibility\",\n                                    \"criterion\": \"Do you or any of your family members own any land?\",\n                                    \"criterionCode\": \"CT0001AJ\",\n                                    \"value\": \"Yes - for agriculture\"\n                                },\n                                {\n                                    \"code\": \"economicEligibility\",\n                                    \"criterion\": \"Are/were you/ any of your family members employed by a government or semi-government body?\",\n                                    \"criterionCode\": \"CT0001U6\",\n                                    \"value\": \"No\"\n                                },\n                                {\n                                    \"code\": \"economicEligibility\",\n                                    \"criterion\": \"Nature of Job\",\n                                    \"criterionCode\": \"CT000015\",\n                                    \"value\": \"Farmer\"\n                                },\n                                {\n                                    \"code\": \"economicEligibility\",\n                                    \"criterion\": \"Are you or any of your family member was a income tax payee in last assessment year?\",\n                                    \"criterionCode\": \"CT0006C2\",\n                                    \"value\": \"No\"\n                                },\n                                {\n                                    \"code\": \"demographicEligibility\",\n                                    \"criterion\": \"What is your age?\",\n                                    \"criterionCode\": \"CT000031\",\n                                    \"value\": \">= 18\"\n                                },\n                                {\n                                    \"code\": \"providerLocation\",\n                                    \"country\": \"IN\",\n                                    \"locationCode\": \"IN-AN\",\n                                    \"locationId\": \"35\",\n                                    \"locationName\": \"ANDAMAN AND NICOBAR ISLANDS\"\n                                },\n                                {\n                                    \"code\": \"providerLocation\",\n                                    \"country\": \"IN\",\n                                    \"locationCode\": \"IN-AP\",\n                                    \"locationId\": \"28\",\n                                    \"locationName\": \"ANDHRA PRADESH\"\n                                },\n                                {\n                                    \"code\": \"providerRateable\",\n                                    \"value\": \"true\"\n                                },\n                                {\n                                    \"code\": \"providerRating\",\n                                    \"value\": \"\"\n                                }\n                            ]\n                        }\n                    }\n                ],\n                \"offers\": [\n                    {\n                        \"considerations\": [\n                            {\n                                \"considerationAttributes\": {\n                                    \"@context\": \"https://schema.beckn.io/PriceSpecification/2.0/context.jsonld\",\n                                    \"@type\": \"PriceSpecification\",\n                                    \"currency\": \"INR\",\n                                    \"value\": 0\n                                },\n                                \"id\": \"consideration-SH00068Q-cost\",\n                                \"status\": {\n                                    \"code\": \"DRAFT\"\n                                }\n                            }\n                        ],\n                        \"descriptor\": {\n                            \"name\": \"Pradhan Mantri Kisan Samman Nidhi Yojana (Central)\"\n                        },\n                        \"id\": \"offer-SH00068Q\",\n                        \"resourceIds\": [\n                            \"SH00068Q\"\n                        ]\n                    }\n                ]\n            }\n        ]\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8081/bap/receiver/on_discover",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8081",
+							"path": [
+								"bap",
+								"receiver",
+								"on_discover"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "discover",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"context\": {\n    \"domain\": \"upagrees.in/govt-schemes\",\n    \"action\": \"discover\",\n    \"bap_id\": \"{{bap_id}}\",\n    \"bap_uri\": \"{{bap_uri}}\",\n    \"transaction_id\": \"{{transaction_id}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"intent\": {\n      \"item\": {\n        \"descriptor\": {\n          \"name\": \"Pradhan Mantri Kisan Samman Nidhi Yojana\"\n        }\n      }\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{bap_adapter_url}}/discover",
+							"host": [
+								"{{bap_adapter_url}}"
+							],
+							"path": [
+								"discover"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "confirm",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"context\": {\n    \"domain\": \"upagrees.in/govt-schemes\",\n    \"action\": \"confirm\",\n    \"bap_id\": \"{{bap_id}}\",\n    \"bap_uri\": \"{{bap_uri}}\",\n    \"bpp_id\": \"{{bpp_id}}\",\n    \"bpp_uri\": \"{{bpp_uri}}\",\n    \"transaction_id\": \"{{transaction_id}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n   \"message\": {\n    \"order\": {\n      \"provider\": {\n        \"id\": \"PM00006C\"\n      },\n      \"items\": [\n        {\n          \"id\": \"SH00068Q\"\n        }\n      ]\n    },\n    \"fulfillments\": [\n      {\n        \"id\": \"a906884a-0672-44e7-aa79-63838c3c2e1c\",\n        \"type\": \"Book a Haqdarshak\",\n        \"customer\": {\n          \"person\": {\n            \"name\": \"Test singh\",\n            \"gender\": \"male\",\n            \"dob\": \"09/09/2009\"\n          },\n          \"contact\": {\n            \"phone\": \"9434243499\"\n          }\n        },\n        \"stops\": [\n          {\n            \"location\": {\n              \"gps\": \"26.8467, 80.94620\"\n            }\n          }\n        ]\n      }\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{bap_adapter_url}}/confirm",
+							"host": [
+								"{{bap_adapter_url}}"
+							],
+							"path": [
+								"confirm"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "status",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"context\": {\n    \"domain\": \"upagrees.in/govt-schemes\",\n    \"action\": \"status\",\n    \"bap_id\": \"{{bap_id}}\",\n    \"bap_uri\": \"{{bap_uri}}\",\n    \"bpp_id\": \"{{bpp_id}}\",\n    \"bpp_uri\": \"{{bpp_uri}}\",\n    \"transaction_id\": \"{{transaction_id}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"order_id\": \"ORD-2026-001234\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{bap_adapter_url}}/status",
+							"host": [
+								"{{bap_adapter_url}}"
+							],
+							"path": [
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "on_confirm",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"context\": {\n    \"domain\": \"upagrees.in/govt-schemes\",\n    \"action\": \"on_confirm\",\n    \"bap_id\": \"{{bap_id}}\",\n    \"bap_uri\": \"{{bap_uri}}\",\n    \"bpp_id\": \"{{bpp_id}}\",\n    \"bpp_uri\": \"{{bpp_uri}}\",\n    \"transaction_id\": \"{{transaction_id}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"order\": {\n      \"id\": \"BJ0033UA\",\n      \"provider\": {\n        \"id\": \"PM00006C\",\n        \"descriptor\": {\n          \"name\": \"Ministry of Agriculture\"\n        }\n      },\n      \"items\": [\n        {\n          \"id\": \"SH00068Q\",\n          \"descriptor\": {\n            \"name\": \"Pradhan Mantri Kisan Samman Nidhi Yojana (Central)\",\n            \"long_desc\": \"This scheme provides financial assistance (\\u20b9 6000 per year in three installments) to farmer families having cultivable land to increase crop production. The scheme aims to supplement the financial needs of the farmers in procuring various inputs to ensure proper crop health and appropriate yields, commensurate with the anticipated farm income.\"\n          },\n          \"price\": {\n            \"currency\": \"INR\",\n            \"value\": \"0\"\n          },\n          \"rateable\": true,\n          \"tags\": [\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"target-beneficiary-type\",\n                \"name\": \"Target beneficiary type\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"Ind\",\n                    \"name\": \"Individual\"\n                  },\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"funding-model\",\n                \"name\": \"Funding model\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"PM000024\",\n                    \"name\": \"Central Sector Scheme\",\n                    \"longDescription\": \"\"\n                  },\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"benefit\",\n                \"name\": \"Benefit\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"Farmers\",\n                    \"name\": \"Farmers\"\n                  },\n                  \"value\": \"6000 per year in three equal installment\",\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"short-benefit\",\n                \"name\": \"Short Benefit\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"short-benefit\",\n                    \"name\": \"Short Benefit\"\n                  },\n                  \"value\": \"\\u20b9 6000 per year in three installments\",\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"required-docs\",\n                \"name\": \"Required documents\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"mandatory-doc\",\n                    \"name\": \"Mandatory document\",\n                    \"short_description\": \"Proof of Identity\"\n                  },\n                  \"value\": \"Aadhaar Card (Central)\",\n                  \"display\": true\n                },\n                {\n                  \"descriptor\": {\n                    \"code\": \"mandatory-doc\",\n                    \"name\": \"Mandatory document\",\n                    \"short_description\": \"Proof of Bank Account\"\n                  },\n                  \"value\": \"Bank Account Passbook\",\n                  \"display\": true\n                },\n                {\n                  \"descriptor\": {\n                    \"code\": \"optional-doc\",\n                    \"name\": \"Optional document\",\n                    \"short_description\": \"Proof of Property Holding\"\n                  },\n                  \"value\": \"Land ownership right document\",\n                  \"display\": true\n                },\n                {\n                  \"descriptor\": {\n                    \"code\": \"optional-doc\",\n                    \"name\": \"Optional document\",\n                    \"short_description\": \"Proof of Property Holding\"\n                  },\n                  \"value\": \"Khasra / Khata / Khatoni number\",\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"documentsListText\",\n                \"name\": \"documents List Text\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"documentsListText\",\n                    \"name\": \"documents List Text\"\n                  },\n                  \"value\": \"Mandatory document: Aadhaar Card (Central) (Proof of Identity), Bank Account Passbook (Proof of Bank Account)\\nOptional document: Land ownership right document (Proof of Property Holding), Khasra / Khata / Khatoni number (Proof of Property Holding)\",\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"economic-eligibility\",\n                \"name\": \"Economic eligibility\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"CT0001AJ\",\n                    \"name\": \"Do you or any of your family members own any land?\"\n                  },\n                  \"value\": \"= Yes - for agriculture\",\n                  \"display\": true\n                },\n                {\n                  \"descriptor\": {\n                    \"code\": \"CT0001U6\",\n                    \"name\": \"Are/were you/ any of your family members employed by a government or semi-government body?\"\n                  },\n                  \"value\": \"= No\",\n                  \"display\": true\n                },\n                {\n                  \"descriptor\": {\n                    \"code\": \"CT000015\",\n                    \"name\": \"Nature of Job\"\n                  },\n                  \"value\": \"= Farmer\",\n                  \"display\": true\n                },\n                {\n                  \"descriptor\": {\n                    \"code\": \"CT0006C2\",\n                    \"name\": \"Are you or any of your family member was a income tax payee in last assessment year?\"\n                  },\n                  \"value\": \"= No\",\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"demographic-eligibility\",\n                \"name\": \"Demographic eligibility\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"CT000031\",\n                    \"name\": \"What is your age?\"\n                  },\n                  \"value\": \">= 18\",\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"eligibilityText\",\n                \"name\": \"eligibility Text\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"eligibilityText\",\n                    \"name\": \"eligibility Text\"\n                  },\n                  \"value\": \"Economic eligibility: Do you or any of your family members own any land?: = Yes - for agriculture; Are/were you/ any of your family members employed by a government or semi-government body?: = No; Nature of Job: = Farmer; Are you or any of your family member was a income tax payee in last assessment year?: = No\\nDemographic eligibility: What is your age?: >= 18\",\n                  \"display\": true\n                }\n              ]\n            }\n          ],\n          \"category_ids\": [\n            \"PM0001MX\"\n          ],\n          \"location_ids\": [\n            \"28\",\n            \"12\",\n            \"18\",\n            \"10\",\n            \"22\",\n            \"30\",\n            \"24\",\n            \"6\",\n            \"2\",\n            \"1\",\n            \"20\",\n            \"29\",\n            \"32\",\n            \"23\",\n            \"27\",\n            \"14\",\n            \"17\",\n            \"15\",\n            \"13\",\n            \"21\",\n            \"3\",\n            \"8\",\n            \"11\",\n            \"33\",\n            \"36\",\n            \"16\",\n            \"5\",\n            \"9\",\n            \"19\",\n            \"35\",\n            \"4\",\n            \"38\",\n            \"7\",\n            \"31\",\n            \"34\",\n            \"37\"\n          ],\n          \"time\": {\n            \"duration\": \"\"\n          },\n          \"rating\": \"\"\n        }\n      ],\n      \"fulfillments\": [\n        {\n          \"id\": \"fa0f2c5f-b6d8-45e8-aa2d-b760d47e1a34\",\n          \"type\": \"Book a Haqdarshak\",\n          \"customer\": {\n            \"person\": {\n              \"name\": \"Arpit\",\n              \"gender\": \"Male\",\n              \"dob\": \"20-12-1997\"\n            },\n            \"contact\": {\n              \"phone\": \"919639614074\"\n            }\n          },\n          \"stops\": [\n            {\n              \"location\": {\n                \"gps\": \"12.945020,77.678134\"\n              }\n            }\n          ],\n          \"agent\": {\n            \"organization\": {\n              \"descriptor\": {\n                \"code\": \"haqdarshak\",\n                \"name\": \"Haqdarshak\"\n              }\n            }\n          },\n          \"state\": {\n            \"descriptor\": {\n              \"code\": \"Booking-not-Confirmed\",\n              \"name\": \"Agent is not available at your location.\"\n            }\n          }\n        }\n      ]\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{bpp_adapter_url}}/on_confirm",
+							"host": [
+								"{{bpp_adapter_url}}"
+							],
+							"path": [
+								"on_confirm"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "on_status",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"context\": {\n    \"domain\": \"upagrees.in/govt-schemes\",\n    \"action\": \"on_status\",\n    \"bap_id\": \"{{bap_id}}\",\n    \"bap_uri\": \"{{bap_uri}}\",\n    \"bpp_id\": \"{{bpp_id}}\",\n    \"bpp_uri\": \"{{bpp_uri}}\",\n    \"transaction_id\": \"{{transaction_id}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"order\": {\n      \"id\": \"BJ0033UA\",\n      \"provider\": {\n        \"id\": \"PM00006C\",\n        \"descriptor\": {\n          \"name\": \"Ministry of Agriculture\"\n        }\n      },\n      \"items\": [\n        {\n          \"id\": \"SH00068Q\",\n          \"descriptor\": {\n            \"name\": \"Pradhan Mantri Kisan Samman Nidhi Yojana (Central)\",\n            \"long_desc\": \"This scheme provides financial assistance (\\u20b9 6000 per year in three installments) to farmer families having cultivable land to increase crop production. The scheme aims to supplement the financial needs of the farmers in procuring various inputs to ensure proper crop health and appropriate yields, commensurate with the anticipated farm income.\"\n          },\n          \"price\": {\n            \"currency\": \"INR\",\n            \"value\": \"0\"\n          },\n          \"rateable\": true,\n          \"tags\": [\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"target-beneficiary-type\",\n                \"name\": \"Target beneficiary type\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"Ind\",\n                    \"name\": \"Individual\"\n                  },\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"funding-model\",\n                \"name\": \"Funding model\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"PM000024\",\n                    \"name\": \"Central Sector Scheme\",\n                    \"longDescription\": \"\"\n                  },\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"benefit\",\n                \"name\": \"Benefit\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"Farmers\",\n                    \"name\": \"Farmers\"\n                  },\n                  \"value\": \"6000 per year in three equal installment\",\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"short-benefit\",\n                \"name\": \"Short Benefit\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"short-benefit\",\n                    \"name\": \"Short Benefit\"\n                  },\n                  \"value\": \"\\u20b9 6000 per year in three installments\",\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"required-docs\",\n                \"name\": \"Required documents\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"mandatory-doc\",\n                    \"name\": \"Mandatory document\",\n                    \"short_description\": \"Proof of Identity\"\n                  },\n                  \"value\": \"Aadhaar Card (Central)\",\n                  \"display\": true\n                },\n                {\n                  \"descriptor\": {\n                    \"code\": \"mandatory-doc\",\n                    \"name\": \"Mandatory document\",\n                    \"short_description\": \"Proof of Bank Account\"\n                  },\n                  \"value\": \"Bank Account Passbook\",\n                  \"display\": true\n                },\n                {\n                  \"descriptor\": {\n                    \"code\": \"optional-doc\",\n                    \"name\": \"Optional document\",\n                    \"short_description\": \"Proof of Property Holding\"\n                  },\n                  \"value\": \"Land ownership right document\",\n                  \"display\": true\n                },\n                {\n                  \"descriptor\": {\n                    \"code\": \"optional-doc\",\n                    \"name\": \"Optional document\",\n                    \"short_description\": \"Proof of Property Holding\"\n                  },\n                  \"value\": \"Khasra / Khata / Khatoni number\",\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"documentsListText\",\n                \"name\": \"documents List Text\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"documentsListText\",\n                    \"name\": \"documents List Text\"\n                  },\n                  \"value\": \"Mandatory document: Aadhaar Card (Central) (Proof of Identity), Bank Account Passbook (Proof of Bank Account)\\nOptional document: Land ownership right document (Proof of Property Holding), Khasra / Khata / Khatoni number (Proof of Property Holding)\",\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"economic-eligibility\",\n                \"name\": \"Economic eligibility\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"CT0001AJ\",\n                    \"name\": \"Do you or any of your family members own any land?\"\n                  },\n                  \"value\": \"= Yes - for agriculture\",\n                  \"display\": true\n                },\n                {\n                  \"descriptor\": {\n                    \"code\": \"CT0001U6\",\n                    \"name\": \"Are/were you/ any of your family members employed by a government or semi-government body?\"\n                  },\n                  \"value\": \"= No\",\n                  \"display\": true\n                },\n                {\n                  \"descriptor\": {\n                    \"code\": \"CT000015\",\n                    \"name\": \"Nature of Job\"\n                  },\n                  \"value\": \"= Farmer\",\n                  \"display\": true\n                },\n                {\n                  \"descriptor\": {\n                    \"code\": \"CT0006C2\",\n                    \"name\": \"Are you or any of your family member was a income tax payee in last assessment year?\"\n                  },\n                  \"value\": \"= No\",\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"demographic-eligibility\",\n                \"name\": \"Demographic eligibility\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"CT000031\",\n                    \"name\": \"What is your age?\"\n                  },\n                  \"value\": \">= 18\",\n                  \"display\": true\n                }\n              ]\n            },\n            {\n              \"display\": true,\n              \"descriptor\": {\n                \"code\": \"eligibilityText\",\n                \"name\": \"eligibility Text\"\n              },\n              \"list\": [\n                {\n                  \"descriptor\": {\n                    \"code\": \"eligibilityText\",\n                    \"name\": \"eligibility Text\"\n                  },\n                  \"value\": \"Economic eligibility: Do you or any of your family members own any land?: = Yes - for agriculture; Are/were you/ any of your family members employed by a government or semi-government body?: = No; Nature of Job: = Farmer; Are you or any of your family member was a income tax payee in last assessment year?: = No\\nDemographic eligibility: What is your age?: >= 18\",\n                  \"display\": true\n                }\n              ]\n            }\n          ],\n          \"category_ids\": [\n            \"PM0001MX\"\n          ],\n          \"location_ids\": [\n            \"28\",\n            \"12\",\n            \"18\",\n            \"10\",\n            \"22\",\n            \"30\",\n            \"24\",\n            \"6\",\n            \"2\",\n            \"1\",\n            \"20\",\n            \"29\",\n            \"32\",\n            \"23\",\n            \"27\",\n            \"14\",\n            \"17\",\n            \"15\",\n            \"13\",\n            \"21\",\n            \"3\",\n            \"8\",\n            \"11\",\n            \"33\",\n            \"36\",\n            \"16\",\n            \"5\",\n            \"9\",\n            \"19\",\n            \"35\",\n            \"4\",\n            \"38\",\n            \"7\",\n            \"31\",\n            \"34\",\n            \"37\"\n          ],\n          \"time\": {\n            \"duration\": \"\"\n          },\n          \"rating\": \"\"\n        }\n      ],\n      \"fulfillments\": [\n        {\n          \"agent\": {\n            \"organization\": {\n              \"descriptor\": {\n                \"code\": \"haqdarshak\",\n                \"name\": \"Haqdarshak\"\n              }\n            }\n          },\n          \"state\": {\n            \"descriptor\": {\n              \"code\": \"Booking-not-Confirmed\"\n            }\n          }\n        }\n      ]\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{bpp_adapter_url}}/on_status",
+							"host": [
+								"{{bpp_adapter_url}}"
+							],
+							"path": [
+								"on_status"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Agri-Soil",
+			"item": [
+				{
+					"name": "discover",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"context\": {\n    \"domain\": \"upagrees.in/soil-testing\",\n    \"action\": \"discover\",\n    \"bap_id\": \"{{bap_id}}\",\n    \"bap_uri\": \"{{bap_uri}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"transaction_id\": \"{{$randomUUID}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"intent\": {\n      \"item\": {\n        \"descriptor\": {\n          \"name\": \"Soil Macronutrient Test\"\n        }\n      }\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{bap_adapter_url}}/discover",
+							"host": [
+								"{{bap_adapter_url}}"
+							],
+							"path": [
+								"discover"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "catalog/publish",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"context\": {\n    \"domain\": \"upagrees.in/soil-testing\",\n    \"action\": \"catalog/publish\",\n    \"bpp_id\": \"{{bpp_id}}\",\n    \"bpp_uri\": \"{{bpp_uri}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"transaction_id\": \"{{$randomUUID}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"catalog\": {\n      \"providers\": [\n        {\n          \"id\": \"iari-soil-lab-delhi-01\",\n          \"descriptor\": {\n            \"name\": \"IARI Regional Soil Testing Laboratory\"\n          },\n          \"fulfillments\": [\n            {\n              \"id\": \"FULFILLMENT_DROP_01\",\n              \"type\": \"drop\",\n              \"stops\": [\n                {\n                  \"type\": \"end\",\n                  \"location\": {\n                    \"gps\": \"28.6378,77.1678\",\n                    \"address\": {\n                      \"street\": \"Pusa Road, IARI Campus\",\n                      \"city\": \"New Delhi\",\n                      \"state\": \"Delhi\",\n                      \"area_code\": \"110012\"\n                    }\n                  },\n                  \"instructions\": { \"name\": \"Drop off sample at this location\" }\n                }\n              ]\n            },\n            {\n              \"id\": \"FULFILLMENT_PICKUP_02\",\n              \"type\": \"pickup\",\n              \"stops\": [\n                {\n                  \"type\": \"start\",\n                  \"instructions\": { \"name\": \"Schedule Agent Pickup\" },\n                  \"authorization\": {\n                    \"type\": \"url\",\n                    \"token\": \"https://iari.gov.in/soil-testing/book-pickup\"\n                  }\n                }\n              ]\n            }\n          ],\n          \"items\": [\n            {\n              \"id\": \"TEST_MACRO_01\",\n              \"descriptor\": {\n                \"name\": \"Standard Soil Macronutrient Test\",\n                \"short_desc\": \"Tests for pH, Nitrogen (N), Phosphorus (P), and Potassium (K).\"\n              },\n              \"price\": {\n                \"currency\": \"INR\",\n                \"value\": \"500\"\n              },\n              \"fulfillment_ids\": [\n                \"FULFILLMENT_DROP_01\",\n                \"FULFILLMENT_PICKUP_02\"\n              ]\n            }\n          ]\n        }\n      ]\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{bpp_adapter_url}}/publish",
+							"host": [
+								"{{bpp_adapter_url}}"
+							],
+							"path": [
+								"publish"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "on_discover",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"context\": {\n    \"action\": \"on_discover\",\n    \"bapId\": \"bap.example.com\",\n    \"bapUri\": \"http://onix-bap:8081/bap/receiver\",\n    \"messageId\": \"e2832325-cd0c-45a0-bdef-7b6495d8677f\",\n    \"networkId\": \"upagrees.in/soil-testing\",\n    \"timestamp\": \"2026-05-28T11:55:29.877Z\",\n    \"transactionId\": \"890ee8e4-f91b-45a9-91a6-40547c6363a0\",\n    \"ttl\": \"PT30S\",\n    \"version\": \"2.0.0\"\n  },\n  \"message\": {\n    \"catalogs\": [\n      {\n        \"id\": \"catalog-iari-soil-lab-delhi-01\",\n        \"descriptor\": {\n          \"name\": \"IARI Regional Soil Testing Laboratory\"\n        },\n        \"provider\": {\n          \"id\": \"iari-soil-lab-delhi-01\",\n          \"descriptor\": {\n            \"name\": \"IARI Regional Soil Testing Laboratory\"\n          }\n        },\n        \"resources\": [\n          {\n            \"id\": \"TEST_MACRO_01\",\n            \"descriptor\": {\n              \"name\": \"Standard Soil Macronutrient Test\",\n              \"shortDesc\": \"Tests for pH, Nitrogen (N), Phosphorus (P), and Potassium (K).\"\n            },\n            \"resourceAttributes\": {\n              \"@context\": \"https://schema.beckn.io/Attributes/v2.0/context.jsonld\",\n              \"@type\": \"Attributes\",\n              \"entitlementIds\": [\n                {\n                  \"code\": \"fulfillmentIds\",\n                  \"values\": [\n                    \"FULFILLMENT_DROP_01\",\n                    \"FULFILLMENT_PICKUP_02\"\n                  ]\n                }\n              ]\n            }\n          }\n        ],\n        \"offers\": [\n          {\n            \"considerations\": [\n              {\n                \"considerationAttributes\": {\n                  \"@context\": \"https://schema.beckn.io/PriceSpecification/2.0/context.jsonld\",\n                  \"@type\": \"PriceSpecification\",\n                  \"currency\": \"INR\",\n                  \"value\": 500\n                },\n                \"id\": \"consideration-TEST_MACRO_01-FULFILLMENT_DROP_01-cost\",\n                \"status\": {\n                  \"code\": \"DRAFT\"\n                }\n              }\n            ],\n            \"descriptor\": {\n              \"name\": \"Standard Soil Macronutrient Test\"\n            },\n            \"id\": \"offer-TEST_MACRO_01-FULFILLMENT_DROP_01\",\n            \"offerAttributes\": {\n              \"@context\": \"https://schema.beckn.io/Attributes/v2.0/context.jsonld\",\n              \"@type\": \"Attributes\",\n              \"fulfillmentCity\": \"New Delhi\",\n              \"fulfillmentGeo\": [\n                77.1678,\n                28.6378\n              ],\n              \"fulfillmentGps\": \"28.6378,77.1678\",\n              \"fulfillmentId\": \"FULFILLMENT_DROP_01\",\n              \"fulfillmentPostalCode\": \"110012\",\n              \"fulfillmentRegion\": \"Delhi\",\n              \"fulfillmentStreet\": \"Pusa Road, IARI Campus\",\n              \"fulfillmentType\": \"drop\",\n              \"instructions\": \"Drop off sample at this location\"\n            },\n            \"resourceIds\": [\n              \"TEST_MACRO_01\"\n            ]\n          },\n          {\n            \"considerations\": [\n              {\n                \"considerationAttributes\": {\n                  \"@context\": \"https://schema.beckn.io/PriceSpecification/2.0/context.jsonld\",\n                  \"@type\": \"PriceSpecification\",\n                  \"currency\": \"INR\",\n                  \"value\": 500\n                },\n                \"id\": \"consideration-TEST_MACRO_01-FULFILLMENT_PICKUP_02-cost\",\n                \"status\": {\n                  \"code\": \"DRAFT\"\n                }\n              }\n            ],\n            \"descriptor\": {\n              \"name\": \"Standard Soil Macronutrient Test\"\n            },\n            \"id\": \"offer-TEST_MACRO_01-FULFILLMENT_PICKUP_02\",\n            \"offerAttributes\": {\n              \"@context\": \"https://schema.beckn.io/Attributes/v2.0/context.jsonld\",\n              \"@type\": \"Attributes\",\n              \"bookingUrl\": \"https://iari.gov.in/soil-testing/book-pickup\",\n              \"fulfillmentId\": \"FULFILLMENT_PICKUP_02\",\n              \"fulfillmentType\": \"pickup\",\n              \"instructions\": \"Schedule Agent Pickup\"\n            },\n            \"resourceIds\": [\n              \"TEST_MACRO_01\"\n            ]\n          }\n        ]\n      }\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8081/bap/receiver/on_discover",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8081",
+							"path": [
+								"bap",
+								"receiver",
+								"on_discover"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "version",
+			"value": "1.0.0"
+		},
+		{
+			"key": "bap_id",
+			"value": "bap.example.com"
+		},
+		{
+			"key": "bap_uri",
+			"value": "http://onix-bap:8081/bap/receiver"
+		},
+		{
+			"key": "bpp_id",
+			"value": "bpp.example.com"
+		},
+		{
+			"key": "bpp_uri",
+			"value": "http://onix-bpp:8082/bpp/receiver"
+		},
+		{
+			"key": "bap_adapter_url",
+			"value": "http://localhost:8081/bap/caller"
+		},
+		{
+			"key": "bpp_adapter_url",
+			"value": "http://localhost:8082/bpp/caller"
+		},
+		{
+			"key": "transaction_id",
+			"value": "7f4b8f4e-3a9d-4d9a-b6c2-8e1f7a5c91d3"
+		}
+	]
+}

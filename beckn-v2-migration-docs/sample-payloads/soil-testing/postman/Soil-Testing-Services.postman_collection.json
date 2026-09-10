@@ -1,0 +1,62 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-0002-0002-0002-soil-testing",
+    "name": "Soil Testing Services (V1)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "discover",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"context\": {\n    \"domain\": \"soil-testing\",\n    \"action\": \"discover\",\n    \"bap_id\": \"{{bap_id}}\",\n    \"bap_uri\": \"{{bap_uri}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"transaction_id\": \"{{$randomUUID}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"intent\": {\n      \"item\": {\n        \"descriptor\": {\n          \"name\": \"Soil Macronutrient Test\"\n        }\n      },\n      \"fulfillment\": {\n        \"type\": \"drop\",\n        \"stops\": [\n          {\n            \"type\": \"start\",\n            \"location\": {\n              \"gps\": \"28.6378,77.1678\"\n            }\n          }\n        ]\n      }\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{bap_adapter_url}}/discover",
+          "host": ["{{bap_adapter_url}}"],
+          "path": ["discover"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "catalog/publish",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"context\": {\n    \"domain\": \"soil-testing\",\n    \"action\": \"catalog/publish\",\n    \"bpp_id\": \"{{bpp_id}}\",\n    \"bpp_uri\": \"{{bpp_uri}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"transaction_id\": \"{{$randomUUID}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"catalog\": {\n      \"providers\": [\n        {\n          \"id\": \"iari-soil-lab-delhi-01\",\n          \"descriptor\": {\n            \"name\": \"IARI Regional Soil Testing Laboratory\"\n          },\n          \"fulfillments\": [\n            {\n              \"id\": \"FULFILLMENT_DROP_01\",\n              \"type\": \"drop\",\n              \"stops\": [\n                {\n                  \"type\": \"end\",\n                  \"location\": {\n                    \"gps\": \"28.6378,77.1678\",\n                    \"address\": {\n                      \"street\": \"Pusa Road, IARI Campus\",\n                      \"city\": \"New Delhi\",\n                      \"state\": \"Delhi\",\n                      \"area_code\": \"110012\"\n                    }\n                  },\n                  \"instructions\": { \"name\": \"Drop off sample at this location\" }\n                }\n              ]\n            },\n            {\n              \"id\": \"FULFILLMENT_PICKUP_02\",\n              \"type\": \"pickup\",\n              \"stops\": [\n                {\n                  \"type\": \"start\",\n                  \"instructions\": { \"name\": \"Schedule Agent Pickup\" },\n                  \"authorization\": {\n                    \"type\": \"url\",\n                    \"token\": \"https://iari.gov.in/soil-testing/book-pickup\"\n                  }\n                }\n              ]\n            }\n          ],\n          \"items\": [\n            {\n              \"id\": \"TEST_MACRO_01\",\n              \"descriptor\": {\n                \"name\": \"Standard Soil Macronutrient Test\",\n                \"short_desc\": \"Tests for pH, Nitrogen (N), Phosphorus (P), and Potassium (K).\"\n              },\n              \"price\": {\n                \"currency\": \"INR\",\n                \"value\": \"500\"\n              },\n              \"fulfillment_ids\": [\n                \"FULFILLMENT_DROP_01\",\n                \"FULFILLMENT_PICKUP_02\"\n              ]\n            }\n          ]\n        }\n      ]\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{bpp_adapter_url}}/catalog/publish",
+          "host": ["{{bpp_adapter_url}}"],
+          "path": ["catalog", "publish"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    { "key": "version", "value": "1.1.0" },
+    { "key": "bap_id", "value": "bap.example.com" },
+    { "key": "bap_uri", "value": "http://onix-bap:8081/bap/receiver" },
+    { "key": "bpp_id", "value": "bpp.example.com" },
+    { "key": "bpp_uri", "value": "http://onix-bpp:8082/bpp/receiver" },
+    { "key": "bap_adapter_url", "value": "http://localhost:8081/bap/caller" },
+    { "key": "bpp_adapter_url", "value": "http://localhost:8082/bpp/caller" }
+  ]
+}

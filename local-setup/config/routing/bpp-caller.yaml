@@ -1,0 +1,27 @@
+# Outbound routing for the BPP adapter (http://localhost:8082/bpp/caller/*).
+#
+# on_discover / on_confirm / on_status are routed straight back to the local
+# onix-bap receiver, closing the loop without a registry lookup.
+#
+# catalog/publish has no real counterpart in this local stack - there is no
+# Discovery Service here to receive it. It's routed to sandbox-bpp purely as
+# a stub target so you can still exercise the mapper's v1->v2 transform on a
+# publish payload and see the transformed body in the onix-bpp logs; the
+# response itself is meaningless. Point this at a real Discovery/Catalog
+# service endpoint if you have one to test against.
+routingRules:
+  - version: "2.0.0"
+    targetType: "url"
+    target:
+      url: "http://onix-bap:8081/bap/receiver/"
+    endpoints:
+      - on_discover
+      - on_confirm
+      - on_status
+
+  - version: "2.0.0"
+    targetType: "url"
+    target:
+      url: "http://sandbox-bpp:3002/api/webhook"
+    endpoints:
+      - catalog/publish

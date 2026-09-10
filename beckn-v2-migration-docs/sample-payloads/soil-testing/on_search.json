@@ -1,0 +1,79 @@
+{
+    "context": {
+      "domain": "soil-testing",
+      "action": "on_search",
+      "version": "1.1.0",
+      "bap_id": "<BAP_ID>",
+      "bap_uri": "<BAP_URI>",
+      "bpp_id": "<BPP_ID>",
+      "bpp_uri": "<BPP_URI>",
+      "transaction_id": "<TRANSACTION_ID>",
+      "message_id": "<MESSAGE_ID>",
+      "timestamp": "<TIMESTAMP>"
+    },
+    "message": {
+      "catalog": {
+        "providers": [
+          {
+            "id": "<LAB_ID>",
+            "descriptor": {
+              "name": "<LAB_NAME_OR_AGENCY>"
+            },
+            "fulfillments": [
+              {
+                "id": "FULFILLMENT_DROP_01",
+                "type": "drop",
+                "stops": [
+                  {
+                    "type": "end",
+                    "location": {
+                      "gps": "<LAB_LAT,LONG>",
+                      "address": {
+                        "street": "<LAB_STREET_ADDRESS>",
+                        "city": "<CITY>",
+                        "state": "<STATE>",
+                        "area_code": "<PINCODE>"
+                      }
+                    },
+                    "instructions": { "name": "Drop off sample at this location" }
+                  }
+                ]
+              },
+              {
+                "id": "FULFILLMENT_PICKUP_02",
+                "type": "pickup",
+                "stops": [
+                  {
+                    "type": "start",
+                    "instructions": { "name": "Schedule Agent Pickup" },
+                    "authorization": {
+                      "type": "url",
+                      "token": "<EXTERNAL_BOOKING_OR_APP_URL>"
+                    }
+                  }
+                ]
+              }
+            ],
+            "items": [
+              {
+                "id": "TEST_MACRO_01",
+                "descriptor": {
+                  "name": "Standard Soil Macronutrient Test",
+                  "short_desc": "Tests for pH, Nitrogen (N), Phosphorus (P), and Potassium (K)."
+                },
+                "price": {
+                  "currency": "INR",
+                  "value": "500"
+                },
+                "fulfillment_ids": [
+                  "FULFILLMENT_DROP_01",
+                  "FULFILLMENT_PICKUP_02"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+  

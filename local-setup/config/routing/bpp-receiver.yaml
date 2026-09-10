@@ -1,0 +1,13 @@
+# Inbound routing for the BPP adapter (http://localhost:8082/bpp/receiver/*).
+# Every action request the BPP receives (already transformed to v2 and
+# signature-verified by this point) is delivered to the sandbox-bpp
+# application simulator, which auto-generates the matching on_* response.
+routingRules:
+  - version: "2.0.0"
+    targetType: "url"
+    target:
+      url: "http://sandbox-bpp:3002/api/webhook"
+    endpoints:
+      - discover
+      - confirm
+      - status

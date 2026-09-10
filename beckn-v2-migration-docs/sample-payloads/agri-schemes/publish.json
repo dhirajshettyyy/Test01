@@ -1,0 +1,205 @@
+{
+  "context": {
+    "domain": "agri-schemes",
+    "action": "catalog/publish",
+    "bap_id": "dpi-uat-bap",
+    "bap_uri": "https://adapter.mohaneesh.onix.dpi.monster/bap/receiver/",
+    "transaction_id": "88786aa3-58a7-4808-98c4-86df6e282c91",
+    "message_id": "4f565e53-3272-426f-9c4f-0755de0bd943",
+    "version": "1.0.0",
+    "ttl": "PT30S",
+    "timestamp": "2026-05-18T11:52:44.000Z",
+    "bpp_id": "ona.haqdarshak.com",
+    "bpp_uri": "https://adapter.haqdarshak.com/bpp/receiver"
+  },
+  "message": {
+    "catalog": {
+      "descriptor": {
+        "name": "Haqdarshak Government Schemes"
+      },
+      "providers": [
+        {
+          "id": "PM000074",
+          "descriptor": {
+            "name": "Ministry of New and Renewable Energy"
+          },
+          "categories": [
+            {
+              "id": "PM0001MX",
+              "descriptor": {
+                "code": "agriculture-(including-loans)",
+                "name": "Agriculture (Including loans)"
+              }
+            }
+          ],
+          "locations": [
+            {
+              "id": "35",
+              "state": { "code": "IN-AN", "name": "ANDAMAN AND NICOBAR ISLANDS" },
+              "country": { "code": "IN", "name": "India" }
+            },
+            {
+              "id": "28",
+              "state": { "code": "IN-AP", "name": "ANDHRA PRADESH" },
+              "country": { "code": "IN", "name": "India" }
+            },
+            {
+              "id": "9",
+              "state": { "code": "IN-UP", "name": "UTTAR PRADESH" },
+              "country": { "code": "IN", "name": "India" }
+            }
+          ],
+          "items": [
+            {
+              "id": "SH0009TH",
+              "descriptor": {
+                "name": "PM Kusum_Standalone Solar Agriculture Pumps_UP",
+                "long_desc": "Pradhan Mantri Kisan Urja Suraksha evam Utthaan Mahabhiyan (PM-KUSUM) scheme was initiated by the Government of India to increase the income of farmers and provide sources for irrigation and de-dieselize the farm sector. Under this Component, individual farmers can replace their existing diesel pumps with solar pumps up to 10 HP. The farmers get subsidy upto 60% (amount depending upon the capacity of Solar pump)\n\nImportant Information: \nUnder the \"Pradhan Mantri Kusum Yojana\", interested farmers can deposit their required share for standalone solar pumps by taking a loan from the bank. There is a provision for an interest subsidy of 6%, (3% by the Central Government and 3% by the State Government).\n\nEligible farmers can contact their nearest bank branch to avail this interest subsidy. The bank will need to feed the farmers' details on the AIF (Agriculture Infrastructure Fund) portal, based on which the central/state government subsidy will be provided."
+              },
+              "price": {
+                "currency": "INR",
+                "value": "0"
+              },
+              "rateable": true,
+              "tags": [
+                {
+                  "display": true,
+                  "descriptor": {
+                    "code": "target-beneficiary-type",
+                    "name": "Target beneficiary type"
+                  },
+                  "list": [
+                    {
+                      "descriptor": { "code": "Ind", "name": "Individual" },
+                      "display": true
+                    }
+                  ]
+                },
+                {
+                  "display": true,
+                  "descriptor": {
+                    "code": "funding-model",
+                    "name": "Funding model"
+                  },
+                  "list": [
+                    {
+                      "descriptor": { "code": "PM000023", "name": "Centrally Sponsored Scheme (CSS)", "longDescription": "" },
+                      "display": true
+                    }
+                  ]
+                },
+                {
+                  "display": true,
+                  "descriptor": {
+                    "code": "benefit",
+                    "name": "Benefit"
+                  },
+                  "list": [
+                    {
+                      "descriptor": { "code": "2 HP DC Surface pump", "name": "2 HP DC Surface pump" },
+                      "value": "Total subsidy amount ₹ 1,03,030",
+                      "display": true
+                    }
+                  ]
+                },
+                {
+                  "display": true,
+                  "descriptor": {
+                    "code": "short-benefit",
+                    "name": "Short Benefit"
+                  },
+                  "list": [
+                    {
+                      "descriptor": { "code": "short-benefit", "name": "Short Benefit" },
+                      "value": "Subsidy upto 60% for installation of solar agriculture pumps up to 10 Hp",
+                      "display": true
+                    }
+                  ]
+                },
+                {
+                  "display": true,
+                  "descriptor": {
+                    "code": "required-docs",
+                    "name": "Required documents"
+                  },
+                  "list": [
+                    {
+                      "descriptor": { "code": "mandatory-doc", "name": "Mandatory document", "short_description": "Proof of Identity" },
+                      "value": "Aadhaar Card (Central)",
+                      "display": true
+                    },
+                    {
+                      "descriptor": { "code": "mandatory-doc", "name": "Mandatory document", "short_description": "Proof of Bank Account" },
+                      "value": "Bank Passbook",
+                      "display": true
+                    }
+                  ]
+                },
+                {
+                  "display": true,
+                  "descriptor": {
+                    "code": "documentsListText",
+                    "name": "documents List Text"
+                  },
+                  "list": [
+                    {
+                      "descriptor": { "code": "documentsListText", "name": "documents List Text" },
+                      "value": "Mandatory document: Aadhaar Card (Central) (Proof of Identity), Bank Passbook (Proof of Bank Account), Khasra / Khata / Khatoni number (Proof of Property Holding), Color Passport Size Photo (Other documents), Self-decleration form (Other documents)",
+                      "display": true
+                    }
+                  ]
+                },
+                {
+                  "display": true,
+                  "descriptor": {
+                    "code": "economic-eligibility",
+                    "name": "Economic eligibility"
+                  },
+                  "list": [
+                    {
+                      "descriptor": { "code": "CT0001AJ", "name": "Do you or any of your family members own any land?" },
+                      "value": "= Yes - for agriculture",
+                      "display": true
+                    }
+                  ]
+                },
+                {
+                  "display": true,
+                  "descriptor": {
+                    "code": "demographic-eligibility",
+                    "name": "Demographic eligibility"
+                  },
+                  "list": [
+                    {
+                      "descriptor": { "code": "CT00004O", "name": "Which State/UT are you presently residing ?" },
+                      "value": "= Uttar Pradesh",
+                      "display": true
+                    }
+                  ]
+                },
+                {
+                  "display": true,
+                  "descriptor": {
+                    "code": "eligibilityText",
+                    "name": "eligibility Text"
+                  },
+                  "list": [
+                    {
+                      "descriptor": { "code": "eligibilityText", "name": "eligibility Text" },
+                      "value": "Economic eligibility: Nature of Job: = Farmer; Sources of irrigation available for the land ?: = Yes; Do you or any of your family members own any land?: = Yes - for agriculture; Present Occupational Status: = Working; Present Occupational Status: = Student and Working\nDemographic eligibility: Which State/UT are you presently residing ?: = Uttar Pradesh; What is your age?: >= 18",
+                      "display": true
+                    }
+                  ]
+                }
+              ],
+              "category_ids": [ "PM0001MX" ],
+              "location_ids": [ "9" ],
+              "time": { "duration": "" },
+              "rating": ""
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

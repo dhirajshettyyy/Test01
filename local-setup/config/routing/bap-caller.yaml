@@ -1,0 +1,17 @@
+# Outbound routing for the BAP adapter (http://localhost:8081/bap/caller/*).
+#
+# For v2.x.x payloads the router matches on version + endpoint only (domain
+# is ignored) - see beckn-onix's router plugin. All actions supported by the
+# V2 mapper (discover, confirm, status) are routed straight to the local
+# onix-bpp receiver instead of resolving a URL from the live DeDi registry,
+# so a full request/transform/sign/route cycle can be tested without
+# depending on whoever else's endpoint bpp.example.com is registered to.
+routingRules:
+  - version: "2.0.0"
+    targetType: "url"
+    target:
+      url: "http://onix-bpp:8082/bpp/receiver/"
+    endpoints:
+      - discover
+      - confirm
+      - status

@@ -1,0 +1,50 @@
+{
+  "context": {
+    "domain": "agri-schemes",
+    "action": "confirm",
+    "bap_id": "<bap_id>",
+    "bap_uri": "<bap_uri>",
+    "bpp_id": "<bpp_id_from_search_context>",
+    "bpp_uri": "<bpp_uri_from_search_context>",
+    "transaction_id": "<transaction_id_from_search>",
+    "message_id": "c4b3a2f1-e5d6-4c3b-2a1f-0e9d8c7b6a5f",
+    "version": "1.0.0",
+    "ttl": "PT30S",
+    "timestamp": "2026-05-18T11:26:00.000Z"
+  },
+  "message": {
+    "order": {
+      "provider": {
+        "id": "<provider_id>"
+      },
+      "items": [
+        {
+          "id": "<scheme_item_id>"
+        }
+      ]
+    },
+    "fulfillments": [
+      {
+        "id": "<unique_fulfillment_uuid>",
+        "type": "Book a Haqdarshak",
+        "customer": {
+          "person": {
+            "name": "<applicant_full_name>",
+            "gender": "<gender>",
+            "dob": "<dob_yyyy_mm_dd>"
+          },
+          "contact": {
+            "phone": "<phone_number>"
+          }
+        },
+        "stops": [
+          {
+            "location": {
+              "gps": "<lat,long>"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

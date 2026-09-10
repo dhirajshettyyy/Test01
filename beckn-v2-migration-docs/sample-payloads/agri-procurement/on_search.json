@@ -1,0 +1,67 @@
+{
+    "context": {
+      "domain": "agri.market_linkages",
+      "action": "on_search",
+      "bap_id": "<bap_id>",
+      "bap_uri": "<bap_uri>",
+      "bpp_id": "<bpp_id>",
+      "bpp_uri": "<bpp_uri>",
+      "version": "1.0.0",
+      "ttl": "PT30S",
+      "transaction_id": "e5d4c3b2-a1f0-9e8d-7c6b-5a4f3e2d1c0b",
+      "message_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+      "timestamp": "2026-05-18T11:25:25.000Z"
+    },
+    "message": {
+      "catalog": {
+        "descriptor": {
+          "name": "Agri Procurement Catalog"
+        },
+        "providers": [
+          {
+            "id": "<buyer_or_market_provider_id>",
+            "descriptor": {
+              "name": "<buyer_organization_name_e_g_ITC_Choupal>"
+            },
+            "fulfillments": [
+              {
+                "id": "<fulfillment_id_1>",
+                "type": "Procurement Pickup",
+                "tracking": false,
+                "stops": [
+                  {
+                    "type": "end",
+                    "location": {
+                      "gps": "<destination_lat,long>",
+                      "address": "<market_address_string>"
+                    }
+                  }
+                ]
+              }
+            ],
+            "items": [
+              {
+                "id": "<procurement_item_id>",
+                "descriptor": {
+                  "name": "<crop_type_e_g_wheat>",
+                  "short_desc": "<grade_or_quality_spec>",
+                  "long_desc": "<detailed_procurement_terms>"
+                },
+                "price": {
+                  "currency": "INR",
+                  "minimum_value": "<min-price>",
+                  "maximum_value": "<max-price>",
+                  "updated_at": "<timestamp>",
+                  "tags": [{ "name": "unit", "value": "/quintal" }]
+                },
+                "fulfillment_ids": [
+                  "<fulfillment_id_1>"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+  

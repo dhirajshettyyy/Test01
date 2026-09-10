@@ -1,0 +1,9 @@
+routingRules:
+  - version: "2.0.0"
+    targetType: "url"
+    target:
+      url: "add-your-bap-url-here"
+    endpoints:
+      - on_discover
+      - on_confirm
+      - on_status

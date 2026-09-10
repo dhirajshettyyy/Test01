@@ -1,0 +1,88 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Agri Schemes — Bharat OneGov (V1)",
+    "description": "V1 Beckn flow for agri-schemes government benefits.\nFlow: search → confirm → status\n\nBefore running:\n1. Set bap_id, bap_uri, bpp_id, bpp_uri to your registered participant values.\n2. Run 'search' first — transaction_id is pre-set and shared across all requests.\n3. Update provider_id and scheme_item_id in the confirm body from the on_search response.\n4. Update order_id in the status body from the on_confirm response.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "search",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"context\": {\n    \"domain\": \"agri-schemes\",\n    \"action\": \"discover\",\n    \"bap_id\": \"{{bap_id}}\",\n    \"bap_uri\": \"{{bap_uri}}\",\n    \"transaction_id\": \"{{transaction_id}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"intent\": {\n      \"item\": {\n        \"descriptor\": {\n          \"name\": \"farmer subsidy solar pump\"\n        }\n      },\n      \"tags\": [\n        {\n          \"descriptor\": {\n            \"name\": \"languages\"\n          },\n          \"list\": [\n            {\n              \"value\": \"Hindi\"\n            }\n          ]\n        }\n      ]\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{bap_adapter_url}}/discover",
+          "host": ["{{bap_adapter_url}}"],
+          "path": ["discover"]
+        },
+        "description": "Searches for government schemes matching a keyword and language filter.\n\nAfter on_search callback arrives, note:\n- provider_id (e.g. PM00006C)\n- scheme_item_id (e.g. SH00068Q)\n- bpp_id and bpp_uri from the response context"
+      },
+      "response": []
+    },
+    {
+      "name": "confirm",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"context\": {\n    \"domain\": \"agri-schemes\",\n    \"action\": \"confirm\",\n    \"bap_id\": \"{{bap_id}}\",\n    \"bap_uri\": \"{{bap_uri}}\",\n    \"bpp_id\": \"{{bpp_id}}\",\n    \"bpp_uri\": \"{{bpp_uri}}\",\n    \"transaction_id\": \"{{transaction_id}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"order\": {\n      \"provider\": {\n        \"id\": \"PM00006C\"\n      },\n      \"items\": [\n        {\n          \"id\": \"SH00068Q\"\n        }\n      ]\n    },\n    \"fulfillments\": [\n      {\n        \"id\": \"{{$randomUUID}}\",\n        \"type\": \"Book a Haqdarshak\",\n        \"customer\": {\n          \"person\": {\n            \"name\": \"Rajesh Kumar\",\n            \"gender\": \"Male\",\n            \"dob\": \"1985-04-15\"\n          },\n          \"contact\": {\n            \"phone\": \"9876543210\"\n          }\n        },\n        \"stops\": [\n          {\n            \"location\": {\n              \"gps\": \"28.6139,77.2090\"\n            }\n          }\n        ]\n      }\n    ]\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{bap_adapter_url}}/confirm",
+          "host": ["{{bap_adapter_url}}"],
+          "path": ["confirm"]
+        },
+        "description": "Confirms the scheme application with applicant details and location.\n\nUpdate provider_id and scheme_item_id from the on_search response before running.\n\nAfter on_confirm callback arrives:\n- Copy the order ID into the status body as order_id before running 'status'."
+      },
+      "response": []
+    },
+    {
+      "name": "status",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"context\": {\n    \"domain\": \"agri-schemes\",\n    \"action\": \"status\",\n    \"bap_id\": \"{{bap_id}}\",\n    \"bap_uri\": \"{{bap_uri}}\",\n    \"bpp_id\": \"{{bpp_id}}\",\n    \"bpp_uri\": \"{{bpp_uri}}\",\n    \"transaction_id\": \"{{transaction_id}}\",\n    \"message_id\": \"{{$guid}}\",\n    \"version\": \"{{version}}\",\n    \"ttl\": \"PT30S\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n  },\n  \"message\": {\n    \"order_id\": \"ORD-2026-001234\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{bap_adapter_url}}/status",
+          "host": ["{{bap_adapter_url}}"],
+          "path": ["status"]
+        },
+        "description": "Fetches the current status of a confirmed scheme application.\n\nUpdate order_id from the on_confirm callback before running this request."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    { "key": "version", "value": "1.0.0" },
+    { "key": "bap_adapter_url", "value": "http://localhost:8081/bap/caller" },
+    { "key": "bap_id", "value": "bap.example.com" },
+    { "key": "bap_uri", "value": "http://onix-bap:8081/bap/receiver" },
+    { "key": "bpp_id", "value": "bpp.example.com" },
+    { "key": "bpp_uri", "value": "http://onix-bpp:8082/bpp/receiver" },
+    { "key": "transaction_id", "value": "f47ac10b-58cc-4372-a567-0e02b2c3d479" }
+  ]
+}

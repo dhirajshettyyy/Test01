@@ -1,0 +1,1665 @@
+mappings:
+  discover:
+    bapMappings: |
+      (
+        $ctx := $.context;
+        $msg := $.message;
+
+        $lang    := $msg.intent.tags[descriptor.name = "languages"].list[0].value;
+        $fulType := $msg.intent.fulfillment.type;
+        $gps     := $msg.intent.fulfillment.stops[0].location.gps;
+        $addr    := $msg.intent.fulfillment.stops[0].location.address;
+
+        $langExpr := $lang    ? "$.catalogs[*].resources[*][?(@.resourceAttributes.entitlementIds[?(@.code=='language')].value == '" & $lang & "')]" : null;
+        $fulExpr  := $fulType ? "$[?(@.offerAttributes.fulfillmentType == '" & $fulType & "')]" : null;
+        $addrExpr := $addr    ? "$.catalogs[*].provider.availableAt[?(@.address.addressLocality == '" & $addr & "')]" : null;
+        $expression := $langExpr ? $langExpr : ($fulExpr ? $fulExpr : $addrExpr);
+
+        $gpsValid := $gps ? $boolean($match($gps, /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/)) : false;
+        $gpsParts := $gpsValid ? $split($gps, ",") : null;
+        $lat      := $gpsParts ? $number($trim($gpsParts[0])) : null;
+        $lon      := $gpsParts ? $number($trim($gpsParts[1])) : null;
+        $spatial  := ($lat and $lon) ? [{
+          "op": "S_DWITHIN",
+          "targets": ["$['availableAt'][*]['geo']"],
+          "geometry": { "type": "Point", "coordinates": [$lon, $lat] },
+          "distanceMeters": 50000
+        }] : null;
+
+        {
+          "context": {
+            "version": "2.0.0",
+            "action": $ctx.action,
+            "networkId": $ctx.domain,
+            "bapId": $ctx.bap_id,
+            "bapUri": $ctx.bap_uri,
+            "transactionId": $ctx.transaction_id,
+            "messageId": $ctx.message_id,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "intent": $merge([
+              $msg.intent.item.descriptor.name ? {
+                "textSearch": $msg.intent.item.descriptor.name
+              } : {},
+              $expression ? {
+                "filters": { "type": "jsonpath", "expression": $expression }
+              } : {},
+              $spatial ? { "spatial": $spatial } : {}
+            ])
+          }
+        }
+      )
+
+    bppMappings: |
+      (
+        $ctx    := $.context;
+        $intent := $.message.intent;
+
+        $expr      := $intent.filters.expression;
+        $langMatch := $expr ? $match($expr, /code=='language'\]\.value == '([^']+)'/) : null;
+        $lang      := $langMatch ? $langMatch.groups[0] : null;
+        $fulMatch  := $expr ? $match($expr, /offerAttributes\.fulfillmentType == '([^']+)'/) : null;
+        $fulType   := $fulMatch ? $fulMatch.groups[0] : null;
+        $addrMatch := $expr ? $match($expr, /addressLocality == '([^']+)'/) : null;
+        $addrText  := $addrMatch ? $addrMatch.groups[0] : null;
+
+        $spatial := $intent.spatial[0];
+        $coords  := $spatial ? $spatial.geometry.coordinates : null;
+        $lon     := $coords ? $coords[0] : null;
+        $lat     := $coords ? $coords[1] : null;
+        $gps     := ($lat and $lon) ? ($string($lat) & "," & $string($lon)) : null;
+
+        {
+          "context": {
+            "version": "1.1.0",
+            "action": "search",
+            "domain": $ctx.networkId,
+            "bap_id": $ctx.bapId,
+            "bap_uri": $ctx.bapUri,
+            "transaction_id": $ctx.transactionId,
+            "message_id": $ctx.messageId,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "intent": $merge([
+              $intent.textSearch ? { "item": { "descriptor": { "name": $intent.textSearch } } } : {},
+              $lang ? { "tags": [{ "descriptor": { "name": "languages" }, "list": [{ "value": $lang }] }] } : {},
+              ($fulType or $gps or $addrText) ? {
+                "fulfillment": $merge([
+                  $fulType ? { "type": $fulType } : {},
+                  ($gps or $addrText) ? {
+                    "stops": [{
+                      "type": "start",
+                      "location": $merge([
+                        $gps      ? { "gps": $gps }         : {},
+                        $addrText ? { "address": $addrText } : {}
+                      ])
+                    }]
+                  } : {}
+                ])
+              } : {}
+            ])
+          }
+        }
+      )
+
+
+  on_discover:
+    bppMappings: |
+      (
+        $ctx      := $.context;
+        $catalog  := $.message.catalog;
+        $entitlementCtx := "https://schema.beckn.io/Attributes/v2.0/context.jsonld";
+        $priceCtx       := "https://schema.beckn.io/PriceSpecification/2.0/context.jsonld";
+        $providerCtx    := "https://schema.beckn.io/Attributes/v2.0/context.jsonld";
+
+        {
+          "context": {
+            "version": "2.0.0",
+            "action": "on_discover",
+            "networkId": $ctx.domain,
+            "bapId": $ctx.bap_id,
+            "bapUri": $ctx.bap_uri,
+            "bppId": $ctx.bpp_id,
+            "bppUri": $ctx.bpp_uri,
+            "transactionId": $ctx.transaction_id,
+            "messageId": $ctx.message_id,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "catalogs": [$map($catalog.providers, function($provider) {(
+              $resources := [$map($provider.items, function($item) {(
+                $tags     := $item.tags;
+                $tbts     := $tags[descriptor.code = "target-beneficiary-type"].list;
+                $fms      := $tags[descriptor.code = "funding-model"].list;
+                $bens     := $tags[descriptor.code = "benefit"].list;
+                $sbens    := $tags[descriptor.code = "short-benefit"].list;
+                $docs     := $tags[descriptor.code = "required-docs"].list;
+                $econ     := $tags[descriptor.code = "economic-eligibility"].list;
+                $demo     := $tags[descriptor.code = "demographic-eligibility"].list;
+                $docsText          := $tags[descriptor.code = "documentsListText"].list[0].value;
+                $eligText          := $tags[descriptor.code = "eligibilityText"].list[0].value;
+                $knownTagCodes     := ["target-beneficiary-type", "funding-model", "benefit", "short-benefit", "required-docs", "economic-eligibility", "demographic-eligibility", "documentsListText", "eligibilityText"];
+                $unknownTags       := $filter($tags, function($tag) { $not($knownTagCodes[$ = $tag.descriptor.code]) });
+                $unknownTagEntries := $boolean($count($unknownTags)) ? $reduce($map($unknownTags, function($tag) { $map($tag.list, function($item) { $merge([{ "code": $tag.descriptor.code }, $item.value ? { "value": $item.value } : {}, $item.descriptor.code ? { "itemCode": $item.descriptor.code } : {}, $item.descriptor.name ? { "itemName": $item.descriptor.name } : {}]) }) }), $append, []) : [];
+                $cat      := $provider.categories[id = $item.category_ids[0]];
+
+                $scalarTags := $filter([
+                  $cat  ? { "code": "categoryId", "value": $cat.id, "categoryCode": $cat.descriptor.code, "categoryName": $cat.descriptor.name } : null,
+                  $item.rateable ? { "code": "rateable", "value": $string($item.rateable) } : null,
+                  $exists($item.rating)        ? { "code": "rating",   "value": $item.rating }        : null,
+                  $exists($item.time.duration) ? { "code": "duration", "value": $item.time.duration } : null,
+                  $docsText ? { "code": "documentsListText", "value": $docsText }    : null,
+                  $eligText ? { "code": "eligibilityText",   "value": $eligText }    : null
+                ], function($t) { $type($t) != "null" });
+                $tbtTags  := $tbts  ? [$map($tbts,  function($t) {{ "code": "targetBeneficiaryType", "value": $t.descriptor.name, "valueCode": $t.descriptor.code }})] : [];
+                $fmTags   := $fms   ? [$map($fms,   function($f) { $merge([{ "code": "fundingModel", "value": $f.descriptor.name, "valueCode": $f.descriptor.code }, $exists($f.descriptor.longDescription) ? { "longDescription": $f.descriptor.longDescription } : {}]) })] : [];
+                $benTags  := $bens  ? $reduce($bens, function($acc, $b) { $append($acc, $append($b.descriptor.name ? [{ "code": "benefitFor", "value": $b.descriptor.name }] : [], $b.value ? [{ "code": "benefitValue", "value": $b.value }] : [])) }, []) : [];
+                $sbenTags := $sbens ? [$map($sbens, function($s) {{ "code": "shortBenefit", "value": $s.value }})] : [];
+                $locationTags    := $item.location_ids    ? [{ "code": "locationIds",    "values": $item.location_ids }]    : [];
+                $fulfillmentTags := $item.fulfillment_ids ? [{ "code": "fulfillmentIds", "values": $item.fulfillment_ids }] : [];
+                $docTags := $docs ? [$map($docs, function($doc) {(
+                  $docType := $doc.descriptor.code = "mandatory-doc" ? "mandatory" :
+                              $doc.descriptor.code = "optional-doc"  ? "optional"  : "other";
+                  $merge([
+                    { "code": "requiredDoc", "value": $doc.value, "docType": $docType },
+                    $doc.descriptor.short_description ? { "purpose": $doc.descriptor.short_description } : {}
+                  ])
+                )})] : [];
+                $econTags := $econ ? [$map($econ, function($e) {(
+                  $val := $e.value ? $replace($e.value, /^= /, "") : $e.value;
+                  $merge([{ "code": "economicEligibility", "criterion": $e.descriptor.name, "value": $val }, $e.descriptor.code ? { "criterionCode": $e.descriptor.code } : {}])
+                )})] : [];
+                $demoTags := $demo ? [$map($demo, function($e) {(
+                  $val := $e.value ? $replace($e.value, /^= /, "") : $e.value;
+                  $merge([{ "code": "demographicEligibility", "criterion": $e.descriptor.name, "value": $val }, $e.descriptor.code ? { "criterionCode": $e.descriptor.code } : {}])
+                )})] : [];
+                $itemTags := $reduce([$scalarTags, $tbtTags, $fmTags, $benTags, $sbenTags, $locationTags, $fulfillmentTags, $docTags, $econTags, $demoTags, $unknownTagEntries], $append);
+
+                {
+                  "id": $item.id,
+                  "descriptor": $merge([
+                    { "name": $item.descriptor.name },
+                    $item.descriptor.long_desc ? { "longDesc": $item.descriptor.long_desc } : {},
+                    $item.descriptor.short_desc ? { "shortDesc": $item.descriptor.short_desc } : {}
+                  ]),
+                  "resourceAttributes": {
+                    "@context": $entitlementCtx,
+                    "@type": "Attributes",
+                    "entitlementIds": $append([], $itemTags)
+                  }
+                }
+              )})];
+
+              $attrCtx := "https://schema.beckn.io/Attributes/v2.0/context.jsonld";
+              $offers := $reduce($provider.items, function($acc, $item) {(
+                $fids       := $item.fulfillment_ids;
+                $hasFids    := $boolean($fids) and $count($fids) > 0;
+                $multiOffer := $hasFids and $count($fids) > 1;
+                $hasRange   := $item.price.minimum_value or $item.price.maximum_value;
+                $pCtx       := $hasRange ? $attrCtx : $priceCtx;
+                $pType      := $hasRange ? "Attributes" : "PriceSpecification";
+
+                $makeOffer := function($fid) {(
+                  $ful        := $fid ? $provider.fulfillments[id = $fid][0] : null;
+                  $suffix     := $multiOffer ? $fid : null;
+                  $startStop  := $ful.stops[type = "start"][0];
+                  $endStop    := $ful.stops[type = "end"][0];
+                  $locStop    := $endStop ? $endStop : ($ful.stops ? $ful.stops[0] : null);
+                  $fulLoc     := $locStop ? $locStop.location : null;
+                  $fulGps     := $fulLoc.gps;
+                  $fulGpsV    := $fulGps ? $boolean($match($fulGps, /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/)) : false;
+                  $fulParts   := $fulGpsV ? $split($fulGps, ",") : null;
+                  $fulLat     := $fulParts ? $number($trim($fulParts[0])) : null;
+                  $fulLon     := $fulParts ? $number($trim($fulParts[1])) : null;
+                  $fulAddr    := $fulLoc.address;
+                  $instrStop  := $startStop ? $startStop : $endStop;
+                  $instrText  := $instrStop.instructions.name;
+                  $bookingUrl := $startStop.authorization[type = "url"].token;
+                  $merge([
+                    {
+                      "id": "offer-" & $item.id & ($suffix ? "-" & $suffix : ""),
+                      "descriptor": { "name": $item.descriptor.name },
+                      "resourceIds": [$item.id],
+                      "considerations": [{
+                        "id": "consideration-" & $item.id & ($suffix ? "-" & $suffix : "") & "-cost",
+                        "status": { "code": "DRAFT" },
+                        "considerationAttributes": $merge([
+                          { "@context": $pCtx, "@type": $pType, "currency": $item.price.currency },
+                          $item.price.value         ? { "value": $number($item.price.value) }                      : {},
+                          $item.price.minimum_value ? { "minimumValue": $item.price.minimum_value }                : {},
+                          $item.price.maximum_value ? { "maximumValue": $item.price.maximum_value }                : {},
+                          $item.price.updated_at    ? { "updatedAt": $item.price.updated_at }                      : {},
+                          $item.price.tags[name = "unit"].value ? { "unit": $item.price.tags[name = "unit"].value } : {}
+                        ])
+                      }]
+                    },
+                    $ful ? { "offerAttributes": $merge([
+                      { "@context": $attrCtx, "@type": "Attributes" },
+                      $ful.type              ? { "fulfillmentType": $ful.type } : {},
+                      $exists($ful.tracking) ? { "tracking": $ful.tracking }   : {},
+                      $instrText             ? { "instructions": $instrText }   : {},
+                      $bookingUrl            ? { "bookingUrl": $bookingUrl }    : {},
+                      $fid                    ? { "fulfillmentId": $fid }                          : {},
+                      $fulGps                 ? { "fulfillmentGps": $fulGps }                      : {},
+                      ($fulLat and $fulLon)    ? { "fulfillmentGeo": [$fulLon, $fulLat] }           : {},
+                      $fulLoc.descriptor.name ? { "fulfillmentName": $fulLoc.descriptor.name }     : {},
+                      $locStop.time           ? { "fulfillmentTime": $locStop.time }               : {},
+                      $fulAddr ? ($type($fulAddr) != "string" ? $merge([
+                        $fulAddr.street    ? { "fulfillmentStreet": $fulAddr.street }        : {},
+                        $fulAddr.locality  ? { "fulfillmentLocality": $fulAddr.locality }    : {},
+                        $fulAddr.city      ? { "fulfillmentCity": $fulAddr.city }            : {},
+                        $fulAddr.district  ? { "fulfillmentDistrict": $fulAddr.district }    : {},
+                        $fulAddr.state     ? { "fulfillmentRegion": $fulAddr.state }         : {},
+                        $fulAddr.area_code ? { "fulfillmentPostalCode": $fulAddr.area_code } : {},
+                        $fulAddr.country   ? { "fulfillmentCountry": $fulAddr.country }      : {}
+                      ]) : {}) : {}
+                    ]) } : {}
+                  ])
+                )};
+
+                $newOffers := $hasFids ? [$map($fids, function($fid) { $makeOffer($fid) })] : [$makeOffer(null)];
+                $append($acc, $newOffers)
+              )}, []);
+
+              $availableAt := $provider.fulfillments ? (
+                $locs := [$map($provider.fulfillments, function($ful) {(
+                  $endStop  := $ful.stops[type = "end"][0];
+                  $anyStop  := $ful.stops[0];
+                  $stop     := $endStop ? $endStop : $anyStop;
+                  $loc      := $stop ? $stop.location :
+                               ($ful.start ? $ful.start.location : null);
+                  $gps      := $loc.gps;
+                  $gpsValid := $gps ? $boolean($match($gps, /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/)) : false;
+                  $parts    := $gpsValid ? $split($gps, ",") : null;
+                  $lat      := $parts ? $number($trim($parts[0])) : null;
+                  $lon      := $parts ? $number($trim($parts[1])) : null;
+                  $addr     := $loc.address;
+                  ($lat and $lon) ? $merge([
+                    { "geo": { "type": "Point", "coordinates": [$lon, $lat] } },
+                    $addr ? { "address": $type($addr) = "string" ?
+                      { "streetAddress": $addr, "addressCountry": "IN" } :
+                      $merge([
+                        $addr.street    ? { "streetAddress": $addr.street }     : {},
+                        $addr.district  ? { "addressLocality": $addr.district } : {},
+                        $addr.city      ? { "addressLocality": $addr.city }     : {},
+                        $addr.locality  ? { "addressLocality": $addr.locality } : {},
+                        $addr.state     ? { "addressRegion": $addr.state }      : {},
+                        $addr.area_code ? { "postalCode": $addr.area_code }     : {},
+                        { "addressCountry": "IN" }
+                      ])
+                    } : {}
+                  ]) : null
+                )})];
+                $filtered := $filter($locs, function($l) { $type($l) != "null" });
+                $boolean($count($filtered)) ? $append([], $filtered) : null
+              ) : null;
+
+              {
+                "id": "catalog-" & $provider.id,
+                "descriptor": { "name": $catalog.descriptor.name ? $catalog.descriptor.name : $provider.descriptor.name },
+                "provider": $merge([
+                  {
+                    "id": $provider.id,
+                    "descriptor": $provider.descriptor
+                  },
+                  $availableAt ? { "availableAt": $availableAt } : {},
+                  ($provider.locations or $provider.rateable or $exists($provider.rating)) ? {
+                    "providerAttributes": $merge([
+                      { "@context": $providerCtx, "@type": "Attributes" },
+                      $provider.locations ? { "availableInStates": [$map($provider.locations, function($loc) {{
+                        "id": $loc.id,
+                        "name": $loc.state.name,
+                        "code": $loc.state.code,
+                        "country": $loc.country.code
+                      }})] } : {},
+                      $provider.rateable ? { "providerRateable": $string($provider.rateable) } : {},
+                      $exists($provider.rating) ? { "providerRating": $provider.rating } : {}
+                    ])
+                  } : {}
+                ]),
+                "resources": $resources,
+                "offers": $offers
+              }
+            )})]
+          }
+        }
+      )
+
+    bapMappings: |
+      (
+        $ctx      := $.context;
+        $catalogs := $.message.catalogs;
+
+        $mapCatalog := function($cat) {(
+          $provider  := $cat.provider;
+          $resources := $cat.resources;
+          $offers    := $cat.offers;
+
+          $addEq := function($val) {(
+            $val ? ($substring($val, 0, 2) = ">=" or $substring($val, 0, 1) = "=" ? $val : "= " & $val) : $val
+          )};
+
+          $mapDocToTag := function($doc) {(
+            $code  := $doc.type = "mandatory" ? "mandatory-doc" :
+                      $doc.type = "optional"  ? "optional-doc"  : "other-doc";
+            $label := $doc.type = "mandatory" ? "Mandatory document" :
+                      $doc.type = "optional"  ? "Optional document"  : "Other document";
+            $merge([{
+              "descriptor": $merge([
+                { "code": $code, "name": $label },
+                $doc.purpose ? { "short_description": $doc.purpose } : {}
+              ]),
+              "value": $doc.name,
+              "display": true
+            }])
+          )};
+
+          $mapEligToTag := function($e) {(
+            $merge([{
+              "descriptor": $merge([
+                $e.code ? { "code": $e.code } : { "code": "criterion" },
+                { "name": $e.criterion }
+              ]),
+              "value": $addEq($e.value),
+              "display": true
+            }])
+          )};
+
+          $mapResourceToItem := function($resource, $offer) {(
+            $attrs    := $resource.resourceAttributes;
+            $rTags    := $attrs.entitlementIds;
+            $catTag   := $rTags[code = "categoryId" or code = "categoryIds"][0];
+            $catVals  := $catTag.values ? $catTag.values : ($catTag.value ? [$catTag.value] : []);
+            $locs     := $rTags[code = "locationIds"][0].values;
+            $fids     := $rTags[code = "fulfillmentIds"][0].values;
+            $tbts     := $rTags[code = "targetBeneficiaryType"];
+            $fms      := $rTags[code = "fundingModel"];
+            $benFors  := $rTags[code = "benefitFor"];
+            $benVals  := $rTags[code = "benefitValue"];
+            $sBens    := $rTags[code = "shortBenefit"];
+            $docs     := $rTags[code = "requiredDoc"];
+            $econ     := $rTags[code = "economicEligibility"];
+            $demo     := $rTags[code = "demographicEligibility"];
+            $docsText := $rTags[code = "documentsListText"][0].value;
+            $eligText := $rTags[code = "eligibilityText"][0].value;
+            $rateable          := $rTags[code = "rateable"][0].value;
+            $rating            := $rTags[code = "rating"][0].value;
+            $duration          := $rTags[code = "duration"][0].value;
+            $knownRTagCodes    := ["categoryId", "categoryIds", "locationIds", "fulfillmentIds", "targetBeneficiaryType", "fundingModel", "benefitFor", "benefitValue", "shortBenefit", "requiredDoc", "economicEligibility", "demographicEligibility", "documentsListText", "eligibilityText", "rateable", "rating", "duration"];
+            $unknownEntries    := $filter($rTags, function($e) { $not($knownRTagCodes[$ = $e.code]) });
+            $unknownCodes      := $distinct($unknownEntries.code);
+            $unknownTagsOut    := $boolean($count($unknownCodes)) ? [$map($unknownCodes, function($code) {{ "display": true, "descriptor": { "code": $code, "name": $code }, "list": [$map($unknownEntries[code = $code], function($e) { $merge([$exists($e.itemCode) ? { "descriptor": { "code": $e.itemCode, "name": $e.itemName ? $e.itemName : $e.itemCode } } : {}, $exists($e.value) ? { "value": $e.value } : {}, { "display": true }]) })] }})] : [];
+
+            $allTags := [
+              $boolean($count($tbts)) ? {
+                "display": true,
+                "descriptor": { "code": "target-beneficiary-type", "name": "Target beneficiary type" },
+                "list": [$map($tbts, function($t) {{ "descriptor": { "code": $t.valueCode, "name": $t.value }, "display": true }})]
+              } : null,
+              $boolean($count($fms)) ? {
+                "display": true,
+                "descriptor": { "code": "funding-model", "name": "Funding model" },
+                "list": [$map($fms, function($f) {{ "descriptor": $merge([{ "code": $f.valueCode, "name": $f.value }, $exists($f.longDescription) ? { "longDescription": $f.longDescription } : {}]), "display": true }})]
+              } : null,
+              $boolean($count($benFors)) ? {
+                "display": true,
+                "descriptor": { "code": "benefit", "name": "Benefit" },
+                "list": [$map($benFors, function($bf, $i) {{ "descriptor": { "code": $bf.value, "name": $bf.value }, "value": $benVals[$i].value, "display": true }})]
+              } : null,
+              $boolean($count($sBens)) ? {
+                "display": true,
+                "descriptor": { "code": "short-benefit", "name": "Short Benefit" },
+                "list": [$map($sBens, function($s) {{ "descriptor": { "code": "short-benefit", "name": "Short Benefit" }, "value": $s.value, "display": true }})]
+              } : null,
+              $boolean($count($docs)) ? {
+                "display": true,
+                "descriptor": { "code": "required-docs", "name": "Required documents" },
+                "list": [$map($docs, function($doc) {(
+                  $code  := $doc.docType = "mandatory" ? "mandatory-doc" :
+                            $doc.docType = "optional"  ? "optional-doc"  : "other-doc";
+                  $label := $doc.docType = "mandatory" ? "Mandatory document" :
+                            $doc.docType = "optional"  ? "Optional document"  : "Other document";
+                  $merge([{
+                    "descriptor": $merge([
+                      { "code": $code, "name": $label },
+                      $doc.purpose ? { "short_description": $doc.purpose } : {}
+                    ]),
+                    "value": $doc.value,
+                    "display": true
+                  }])
+                )})]
+              } : null,
+              $docsText ? {
+                "display": true,
+                "descriptor": { "code": "documentsListText", "name": "documents List Text" },
+                "list": [{ "descriptor": { "code": "documentsListText", "name": "documents List Text" }, "value": $docsText, "display": true }]
+              } : null,
+              $boolean($count($econ)) ? {
+                "display": true,
+                "descriptor": { "code": "economic-eligibility", "name": "Economic eligibility" },
+                "list": [$map($econ, function($e) {(
+                  $val := $e.value ? ($substring($e.value, 0, 2) = ">=" or $substring($e.value, 0, 1) = "=" ? $e.value : "= " & $e.value) : $e.value;
+                  $merge([{
+                    "descriptor": $merge([$e.criterionCode ? { "code": $e.criterionCode } : { "code": "criterion" }, { "name": $e.criterion }]),
+                    "value": $val, "display": true
+                  }])
+                )})]
+              } : null,
+              $boolean($count($demo)) ? {
+                "display": true,
+                "descriptor": { "code": "demographic-eligibility", "name": "Demographic eligibility" },
+                "list": [$map($demo, function($e) {(
+                  $val := $e.value ? ($substring($e.value, 0, 2) = ">=" or $substring($e.value, 0, 1) = "=" ? $e.value : "= " & $e.value) : $e.value;
+                  $merge([{
+                    "descriptor": $merge([$e.criterionCode ? { "code": $e.criterionCode } : { "code": "criterion" }, { "name": $e.criterion }]),
+                    "value": $val, "display": true
+                  }])
+                )})]
+              } : null,
+              $eligText ? {
+                "display": true,
+                "descriptor": { "code": "eligibilityText", "name": "eligibility Text" },
+                "list": [{ "descriptor": { "code": "eligibilityText", "name": "eligibility Text" }, "value": $eligText, "display": true }]
+              } : null
+            ];
+
+            $filteredTags := $append($filter($allTags, function($t) { $type($t) != "null" }), $unknownTagsOut);
+            $merge([
+              {
+                "id": $resource.id,
+                "descriptor": $merge([
+                  { "name": $resource.descriptor.name },
+                  $resource.descriptor.longDesc ? { "long_desc": $resource.descriptor.longDesc } : {},
+                  $resource.descriptor.shortDesc ? { "short_desc": $resource.descriptor.shortDesc } : {}
+                ]),
+                "price": $offer ? (
+                  $ca := $offer.considerations[0].considerationAttributes;
+                  $merge([
+                    { "currency": $ca.currency },
+                    $exists($ca.value) ? { "value": $string($ca.value) } : {},
+                    $ca.minimumValue ? { "minimum_value": $string($ca.minimumValue) } : {},
+                    $ca.maximumValue ? { "maximum_value": $string($ca.maximumValue) } : {},
+                    $ca.updatedAt ? { "updated_at": $ca.updatedAt } : {},
+                    $ca.unit ? { "tags": [{ "name": "unit", "value": $ca.unit }] } : {}
+                  ])
+                ) : {},
+                "rateable": $rateable ? $boolean($rateable) : undefined,
+                "time": $exists($duration) ? { "duration": $duration } : undefined,
+                "rating": $rating
+              },
+              $boolean($count($catVals)) ? { "category_ids": $catVals } : {},
+              $boolean($count($locs)) ? { "location_ids": $locs } : {},
+              $boolean($count($fids)) ? { "fulfillment_ids": $fids } : {},
+              $boolean($count($filteredTags)) ? { "tags": $filteredTags } : {}
+            ])
+          )};
+
+          $items := [$map($resources, function($r) {(
+            $offer := $offers[resourceIds[0] = $r.id][0];
+            $mapResourceToItem($r, $offer)
+          )})];
+          $cats := $distinct($resources.resourceAttributes.entitlementIds[code = "categoryId"]);
+
+          $fulOffers    := $filter($offers, function($o) { $exists($o.offerAttributes.fulfillmentId) });
+          $uniqueFulIds := $distinct($fulOffers.offerAttributes.fulfillmentId);
+          $fulfillments := $boolean($count($uniqueFulIds)) ? [$map($uniqueFulIds, function($fid) {(
+            $attrs   := $fulOffers[offerAttributes.fulfillmentId = $fid][0].offerAttributes;
+            $gps     := $attrs.fulfillmentGps;
+            $hasAddr := $attrs.fulfillmentStreet or $attrs.fulfillmentLocality or $attrs.fulfillmentCity or $attrs.fulfillmentDistrict or $attrs.fulfillmentRegion;
+            $merge([
+              { "id": $fid },
+              $attrs.fulfillmentType ? { "type": $attrs.fulfillmentType } : {},
+              $gps ? {
+                "stops": [$merge([
+                  { "type": "end" },
+                  {
+                    "location": $merge([
+                      $attrs.fulfillmentName ? { "descriptor": { "name": $attrs.fulfillmentName } } : {},
+                      { "gps": $gps },
+                      $hasAddr ? { "address": $merge([
+                        $attrs.fulfillmentStreet     ? { "street":    $attrs.fulfillmentStreet }     : {},
+                        $attrs.fulfillmentLocality   ? { "locality":  $attrs.fulfillmentLocality }   : {},
+                        $attrs.fulfillmentCity       ? { "city":      $attrs.fulfillmentCity }       : {},
+                        $attrs.fulfillmentDistrict   ? { "district":  $attrs.fulfillmentDistrict }   : {},
+                        $attrs.fulfillmentRegion     ? { "state":     $attrs.fulfillmentRegion }     : {},
+                        $attrs.fulfillmentPostalCode ? { "area_code": $attrs.fulfillmentPostalCode } : {},
+                        $attrs.fulfillmentCountry    ? { "country":   $attrs.fulfillmentCountry }    : {}
+                      ]) } : {}
+                    ])
+                  },
+                  $attrs.instructions ? { "instructions": { "name": $attrs.instructions } } : {},
+                  $attrs.fulfillmentTime ? { "time": $attrs.fulfillmentTime } : {}
+                ])]
+              } :
+              ($attrs.instructions or $attrs.bookingUrl) ? {
+                "stops": [$merge([
+                  { "type": "start" },
+                  $attrs.instructions ? { "instructions": { "name": $attrs.instructions } } : {},
+                  $attrs.bookingUrl   ? { "authorization": { "type": "url", "token": $attrs.bookingUrl } } : {}
+                ])]
+              } : {}
+            ])
+          )})] : null;
+
+          $merge([
+            {
+              "id": $provider.id,
+              "descriptor": $provider.descriptor,
+              "items": $items
+            },
+            $cat.bppId  ? { "bpp_id":  $cat.bppId }  : {},
+            $cat.bppUri ? { "bpp_uri": $cat.bppUri } : {},
+            $fulfillments ? { "fulfillments": $fulfillments } : {},
+            $cats ? { "categories": [$map($cats, function($c) {{
+              "id": $c.value,
+              "descriptor": { "code": $c.categoryCode, "name": $c.categoryName }
+            }})] } : {},
+            $provider.providerAttributes.availableInStates ? { "locations": [$map($provider.providerAttributes.availableInStates, function($s) {{
+              "id": $s.id,
+              "state": { "code": $s.code, "name": $s.name },
+              "country": { "code": $s.country, "name": "India" }
+            }})] } : {},
+            $provider.providerAttributes.providerRateable ? { "rateable": $boolean($provider.providerAttributes.providerRateable) } : {},
+            $exists($provider.providerAttributes.providerRating) ? { "rating": $provider.providerAttributes.providerRating } : {}
+          ])
+        )};
+
+        {
+          "context": {
+            "version": "1.0.0",
+            "action": "on_discover",
+            "domain": $ctx.networkId,
+            "bap_id": $ctx.bapId,
+            "bap_uri": $ctx.bapUri,
+            "bpp_id": $ctx.bppId,
+            "bpp_uri": $ctx.bppUri,
+            "transaction_id": $ctx.transactionId,
+            "message_id": $ctx.messageId,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "catalog": $merge([
+              { "providers": [$map($catalogs, $mapCatalog)] },
+              $catalogs[0].descriptor.name ? { "descriptor": { "name": $catalogs[0].descriptor.name } } : {}
+            ])
+          }
+        }
+      )
+
+  catalog/publish:
+    bapMappings: |
+      $
+    bppMappings: |
+      (
+        $ctx      := $.context;
+        $catalog  := $.message.catalog;
+        $entitlementCtx := "https://schema.beckn.io/Attributes/v2.0/context.jsonld";
+        $priceCtx       := "https://schema.beckn.io/PriceSpecification/2.0/context.jsonld";
+        $providerCtx    := "https://schema.beckn.io/Attributes/v2.0/context.jsonld";
+        $attrCtx        := "https://schema.beckn.io/Attributes/v2.0/context.jsonld";
+
+        {
+          "context": {
+            "version": "2.0.0",
+            "action": "catalog/publish",
+            "networkId": $ctx.domain,
+            "bppId": $ctx.bpp_id,
+            "bppUri": $ctx.bpp_uri,
+            "transactionId": $ctx.transaction_id,
+            "messageId": $ctx.message_id,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "catalogs": [$map($catalog.providers, function($provider) {(
+              $resources := [$map($provider.items, function($item) {(
+                $tags     := $item.tags;
+                $tbts     := $tags[descriptor.code = "target-beneficiary-type"].list;
+                $fms      := $tags[descriptor.code = "funding-model"].list;
+                $bens     := $tags[descriptor.code = "benefit"].list;
+                $sbens    := $tags[descriptor.code = "short-benefit"].list;
+                $docs     := $tags[descriptor.code = "required-docs"].list;
+                $econ     := $tags[descriptor.code = "economic-eligibility"].list;
+                $demo     := $tags[descriptor.code = "demographic-eligibility"].list;
+                $docsText          := $tags[descriptor.code = "documentsListText"].list[0].value;
+                $eligText          := $tags[descriptor.code = "eligibilityText"].list[0].value;
+                $knownTagCodes     := ["target-beneficiary-type", "funding-model", "benefit", "short-benefit", "required-docs", "economic-eligibility", "demographic-eligibility", "documentsListText", "eligibilityText"];
+                $unknownTags       := $filter($tags, function($tag) { $not($knownTagCodes[$ = $tag.descriptor.code]) });
+                $unknownTagEntries := $boolean($count($unknownTags)) ? $reduce($map($unknownTags, function($tag) { $map($tag.list, function($item) { $merge([{ "code": $tag.descriptor.code }, $item.value ? { "value": $item.value } : {}, $item.descriptor.code ? { "itemCode": $item.descriptor.code } : {}, $item.descriptor.name ? { "itemName": $item.descriptor.name } : {}]) }) }), $append, []) : [];
+                $cat      := $provider.categories[id = $item.category_ids[0]];
+
+                $scalarTags := $filter([
+                  $cat  ? { "code": "categoryId", "value": $cat.id, "categoryCode": $cat.descriptor.code, "categoryName": $cat.descriptor.name } : null,
+                  $item.rateable ? { "code": "rateable", "value": $string($item.rateable) } : null,
+                  $exists($item.rating)        ? { "code": "rating",   "value": $item.rating }        : null,
+                  $exists($item.time.duration) ? { "code": "duration", "value": $item.time.duration } : null,
+                  $docsText ? { "code": "documentsListText", "value": $docsText }    : null,
+                  $eligText ? { "code": "eligibilityText",   "value": $eligText }    : null
+                ], function($t) { $type($t) != "null" });
+                $tbtTags  := $tbts  ? [$map($tbts,  function($t) {{ "code": "targetBeneficiaryType", "value": $t.descriptor.name, "valueCode": $t.descriptor.code }})] : [];
+                $fmTags   := $fms   ? [$map($fms,   function($f) { $merge([{ "code": "fundingModel", "value": $f.descriptor.name, "valueCode": $f.descriptor.code }, $exists($f.descriptor.longDescription) ? { "longDescription": $f.descriptor.longDescription } : {}]) })] : [];
+                $benTags  := $bens  ? $reduce($bens, function($acc, $b) { $append($acc, $append($b.descriptor.name ? [{ "code": "benefitFor", "value": $b.descriptor.name }] : [], $b.value ? [{ "code": "benefitValue", "value": $b.value }] : [])) }, []) : [];
+                $sbenTags := $sbens ? [$map($sbens, function($s) {{ "code": "shortBenefit", "value": $s.value }})] : [];
+                $locationTags    := $item.location_ids    ? [{ "code": "locationIds",    "values": $item.location_ids }]    : [];
+                $fulfillmentTags := $item.fulfillment_ids ? [{ "code": "fulfillmentIds", "values": $item.fulfillment_ids }] : [];
+                $docTags := $docs ? [$map($docs, function($doc) {(
+                  $docType := $doc.descriptor.code = "mandatory-doc" ? "mandatory" :
+                              $doc.descriptor.code = "optional-doc"  ? "optional"  : "other";
+                  $merge([
+                    { "code": "requiredDoc", "value": $doc.value, "docType": $docType },
+                    $doc.descriptor.short_description ? { "purpose": $doc.descriptor.short_description } : {}
+                  ])
+                )})] : [];
+                $econTags := $econ ? [$map($econ, function($e) {(
+                  $val := $e.value ? $replace($e.value, /^= /, "") : $e.value;
+                  $merge([{ "code": "economicEligibility", "criterion": $e.descriptor.name, "value": $val }, $e.descriptor.code ? { "criterionCode": $e.descriptor.code } : {}])
+                )})] : [];
+                $demoTags := $demo ? [$map($demo, function($e) {(
+                  $val := $e.value ? $replace($e.value, /^= /, "") : $e.value;
+                  $merge([{ "code": "demographicEligibility", "criterion": $e.descriptor.name, "value": $val }, $e.descriptor.code ? { "criterionCode": $e.descriptor.code } : {}])
+                )})] : [];
+                $itemTags := $reduce([$scalarTags, $tbtTags, $fmTags, $benTags, $sbenTags, $locationTags, $fulfillmentTags, $docTags, $econTags, $demoTags, $unknownTagEntries], $append);
+
+                {
+                  "id": $item.id,
+                  "descriptor": $merge([
+                    { "name": $item.descriptor.name },
+                    $item.descriptor.long_desc ? { "longDesc": $item.descriptor.long_desc } : {},
+                    $item.descriptor.short_desc ? { "shortDesc": $item.descriptor.short_desc } : {}
+                  ]),
+                  "resourceAttributes": {
+                    "@context": $entitlementCtx,
+                    "@type": "Attributes",
+                    "entitlementIds": $append([], $itemTags)
+                  }
+                }
+              )})];
+
+              $offers := $reduce($provider.items, function($acc, $item) {(
+                $fids       := $item.fulfillment_ids;
+                $hasFids    := $boolean($fids) and $count($fids) > 0;
+                $multiOffer := $hasFids and $count($fids) > 1;
+                $hasRange   := $item.price.minimum_value or $item.price.maximum_value;
+                $pCtx       := $hasRange ? $attrCtx : $priceCtx;
+                $pType      := $hasRange ? "Attributes" : "PriceSpecification";
+
+                $makeOffer := function($fid) {(
+                  $ful        := $fid ? $provider.fulfillments[id = $fid][0] : null;
+                  $suffix     := $multiOffer ? $fid : null;
+                  $startStop  := $ful.stops[type = "start"][0];
+                  $endStop    := $ful.stops[type = "end"][0];
+                  $locStop    := $endStop ? $endStop : ($ful.stops ? $ful.stops[0] : null);
+                  $fulLoc     := $locStop ? $locStop.location : null;
+                  $fulGps     := $fulLoc.gps;
+                  $fulGpsV    := $fulGps ? $boolean($match($fulGps, /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/)) : false;
+                  $fulParts   := $fulGpsV ? $split($fulGps, ",") : null;
+                  $fulLat     := $fulParts ? $number($trim($fulParts[0])) : null;
+                  $fulLon     := $fulParts ? $number($trim($fulParts[1])) : null;
+                  $fulAddr    := $fulLoc.address;
+                  $instrStop  := $startStop ? $startStop : $endStop;
+                  $instrText  := $instrStop.instructions.name;
+                  $bookingUrl := $startStop.authorization[type = "url"].token;
+                  $merge([
+                    {
+                      "id": "offer-" & $item.id & ($suffix ? "-" & $suffix : ""),
+                      "descriptor": { "name": $item.descriptor.name },
+                      "resourceIds": [$item.id],
+                      "considerations": [{
+                        "id": "consideration-" & $item.id & ($suffix ? "-" & $suffix : "") & "-cost",
+                        "status": { "code": "DRAFT" },
+                        "considerationAttributes": $merge([
+                          { "@context": $pCtx, "@type": $pType, "currency": $item.price.currency },
+                          $item.price.value         ? { "value": $number($item.price.value) }                      : {},
+                          $item.price.minimum_value ? { "minimumValue": $item.price.minimum_value }                : {},
+                          $item.price.maximum_value ? { "maximumValue": $item.price.maximum_value }                : {},
+                          $item.price.updated_at    ? { "updatedAt": $item.price.updated_at }                      : {},
+                          $item.price.tags[name = "unit"].value ? { "unit": $item.price.tags[name = "unit"].value } : {}
+                        ])
+                      }]
+                    },
+                    $ful ? { "offerAttributes": $merge([
+                      { "@context": $attrCtx, "@type": "Attributes" },
+                      $ful.type              ? { "fulfillmentType": $ful.type } : {},
+                      $exists($ful.tracking) ? { "tracking": $ful.tracking }   : {},
+                      $instrText             ? { "instructions": $instrText }   : {},
+                      $bookingUrl            ? { "bookingUrl": $bookingUrl }    : {},
+                      $fid                    ? { "fulfillmentId": $fid }                          : {},
+                      $fulGps                 ? { "fulfillmentGps": $fulGps }                      : {},
+                      ($fulLat and $fulLon)    ? { "fulfillmentGeo": [$fulLon, $fulLat] }           : {},
+                      $fulLoc.descriptor.name ? { "fulfillmentName": $fulLoc.descriptor.name }     : {},
+                      $locStop.time           ? { "fulfillmentTime": $locStop.time }               : {},
+                      $fulAddr ? ($type($fulAddr) != "string" ? $merge([
+                        $fulAddr.street    ? { "fulfillmentStreet": $fulAddr.street }        : {},
+                        $fulAddr.locality  ? { "fulfillmentLocality": $fulAddr.locality }    : {},
+                        $fulAddr.city      ? { "fulfillmentCity": $fulAddr.city }            : {},
+                        $fulAddr.district  ? { "fulfillmentDistrict": $fulAddr.district }    : {},
+                        $fulAddr.state     ? { "fulfillmentRegion": $fulAddr.state }         : {},
+                        $fulAddr.area_code ? { "fulfillmentPostalCode": $fulAddr.area_code } : {},
+                        $fulAddr.country   ? { "fulfillmentCountry": $fulAddr.country }      : {}
+                      ]) : {}) : {}
+                    ]) } : {}
+                  ])
+                )};
+
+                $newOffers := $hasFids ? [$map($fids, function($fid) { $makeOffer($fid) })] : [$makeOffer(null)];
+                $append($acc, $newOffers)
+              )}, []);
+
+              $availableAt := $provider.fulfillments ? (
+                $locs := [$map($provider.fulfillments, function($ful) {(
+                  $endStop  := $ful.stops[type = "end"][0];
+                  $anyStop  := $ful.stops[0];
+                  $stop     := $endStop ? $endStop : $anyStop;
+                  $loc      := $stop ? $stop.location :
+                               ($ful.start ? $ful.start.location : null);
+                  $gps      := $loc.gps;
+                  $gpsValid := $gps ? $boolean($match($gps, /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/)) : false;
+                  $parts    := $gpsValid ? $split($gps, ",") : null;
+                  $lat      := $parts ? $number($trim($parts[0])) : null;
+                  $lon      := $parts ? $number($trim($parts[1])) : null;
+                  $addr     := $loc.address;
+                  ($lat and $lon) ? $merge([
+                    { "geo": { "type": "Point", "coordinates": [$lon, $lat] } },
+                    $addr ? { "address": $type($addr) = "string" ?
+                      { "streetAddress": $addr, "addressCountry": "IN" } :
+                      $merge([
+                        $addr.street    ? { "streetAddress": $addr.street }     : {},
+                        $addr.district  ? { "addressLocality": $addr.district } : {},
+                        $addr.city      ? { "addressLocality": $addr.city }     : {},
+                        $addr.locality  ? { "addressLocality": $addr.locality } : {},
+                        $addr.state     ? { "addressRegion": $addr.state }      : {},
+                        $addr.area_code ? { "postalCode": $addr.area_code }     : {},
+                        { "addressCountry": "IN" }
+                      ])
+                    } : {}
+                  ]) : null
+                )})];
+                $filtered := $filter($locs, function($l) { $type($l) != "null" });
+                $boolean($count($filtered)) ? $append([], $filtered) : null
+              ) : null;
+
+              {
+                "id": "catalog-" & $provider.id,
+                "descriptor": { "name": $catalog.descriptor.name ? $catalog.descriptor.name : $provider.descriptor.name },
+                "bppId": $ctx.bpp_id,
+                "bppUri": $ctx.bpp_uri,
+                "provider": $merge([
+                  {
+                    "id": $provider.id,
+                    "descriptor": $provider.descriptor
+                  },
+                  $availableAt ? { "availableAt": $availableAt } : {},
+                  ($provider.locations or $provider.rateable or $exists($provider.rating)) ? {
+                    "providerAttributes": $merge([
+                      { "@context": $providerCtx, "@type": "Attributes" },
+                      $provider.locations ? { "availableInStates": [$map($provider.locations, function($loc) {{
+                        "id": $loc.id,
+                        "name": $loc.state.name,
+                        "code": $loc.state.code,
+                        "country": $loc.country.code
+                      }})] } : {},
+                      $provider.rateable ? { "providerRateable": $string($provider.rateable) } : {},
+                      $exists($provider.rating) ? { "providerRating": $provider.rating } : {}
+                    ])
+                  } : {}
+                ]),
+                "resources": $resources,
+                "offers": $offers
+              }
+            )})]
+          }
+        }
+      )
+
+  confirm:
+    bapMappings: |
+      (
+        $ctx   := $.context;
+        $order := $.message.order;
+        $fuls  := $.message.fulfillments;
+        $personCtx  := "https://schema.beckn.io/Person/v2.0/context.jsonld";
+        $attribCtx  := "https://schema.beckn.io/Attributes/v2.0/context.jsonld";
+
+        $reformatDob := function($dob) {(
+          $sep := $contains($dob, "/") ? "/" : "-";
+          $p   := $split($dob, $sep);
+          $p[2] & $sep & $p[1] & $sep & $p[0]
+        )};
+
+        $itemIds := $order.items.id;
+
+        {
+          "context": {
+            "version": "2.0.0",
+            "action": $ctx.action,
+            "networkId": $ctx.domain,
+            "bapId": $ctx.bap_id,
+            "bapUri": $ctx.bap_uri,
+            "bppId": $ctx.bpp_id,
+            "bppUri": $ctx.bpp_uri,
+            "transactionId": $ctx.transaction_id,
+            "messageId": $ctx.message_id,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "contract": {
+              "participants": $append(
+                [{ "id": $order.provider.id }],
+                $map($fuls, function($f) {{
+                  "id": "applicant-" & $f.id,
+                  "participantAttributes": {
+                    "@context": $personCtx,
+                    "@type": "Person",
+                    "id": "applicant-" & $f.id,
+                    "name": $f.customer.person.name,
+                    "telephone": $f.customer.contact.phone,
+                    "personAttributes": {
+                      "gender": $f.customer.person.gender,
+                      "dob": $reformatDob($f.customer.person.dob)
+                    }
+                  }
+                }})
+              ),
+              "commitments": [$map($order.items, function($item) {{
+                "id": "commitment-scheme-" & $item.id,
+                "status": { "descriptor": { "code": "DRAFT" } },
+                "resources": [{ "id": $item.id, "quantity": 1 }],
+                "offer": {
+                  "id": "offer-scheme-" & $item.id,
+                  "resourceIds": [$item.id]
+                }
+              }})],
+              "performance": [$map($fuls, function($f) {{
+                "id": "perf-booking-" & $f.id,
+                "status": { "code": "PENDING" },
+                "commitmentIds": [$map($order.items, function($item) { "commitment-scheme-" & $item.id })],
+                "performanceAttributes": {
+                  "@context": $attribCtx,
+                  "@type": "Attributes",
+                  "visitType": $f.type,
+                  "locationGps": $f.stops[0].location.gps,
+                  "location": {
+                    "geo": {
+                      "type": "Point",
+                      "coordinates": (
+                        $parts := $split($f.stops[0].location.gps, ",");
+                        [$number($trim($parts[1])), $number($trim($parts[0]))]
+                      )
+                    }
+                  }
+                }
+              }})]
+            }
+          }
+        }
+      )
+
+    bppMappings: |
+      (
+        $ctx      := $.context;
+        $contract := $.message.contract;
+
+        $reformatDob := function($dob) {(
+          $sep := $contains($dob, "/") ? "/" : "-";
+          $p   := $split($dob, $sep);
+          $p[2] & $sep & $p[1] & $sep & $p[0]
+        )};
+
+        $providerParticipant   := $contract.participants[0];
+        $applicantParticipants := $filter($contract.participants, function($p, $i) { $i > 0 });
+
+        {
+          "context": {
+            "version": "1.0.0",
+            "action": $ctx.action,
+            "domain": $ctx.networkId,
+            "bap_id": $ctx.bapId,
+            "bap_uri": $ctx.bapUri,
+            "bpp_id": $ctx.bppId,
+            "bpp_uri": $ctx.bppUri,
+            "transaction_id": $ctx.transactionId,
+            "message_id": $ctx.messageId,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "order": {
+              "provider": { "id": $providerParticipant.id },
+              "items": [$map($contract.commitments, function($c) {{
+                "id": $c.resources[0].id
+              }})]
+            },
+            "fulfillments": [$map($contract.performance, function($perf) {(
+              $fulfillmentId := $substringAfter($perf.id, "perf-booking-");
+              $applicant     := $applicantParticipants[id = "applicant-" & $fulfillmentId];
+              $attrs         := $applicant.participantAttributes;
+              $pAttrs        := $perf.performanceAttributes;
+              $coords        := $pAttrs.location.geo.coordinates;
+              $rawGps        := $pAttrs.locationGps;
+              {
+                "id": $fulfillmentId,
+                "type": $pAttrs.visitType,
+                "customer": {
+                  "person": {
+                    "name": $attrs.name,
+                    "gender": $attrs.personAttributes.gender,
+                    "dob": $reformatDob($attrs.personAttributes.dob)
+                  },
+                  "contact": { "phone": $attrs.telephone }
+                },
+                "stops": [{
+                  "location": {
+                    "gps": $rawGps ? $rawGps : ($string($coords[1]) & "," & $string($coords[0]))
+                  }
+                }]
+              }
+            )})]
+          }
+        }
+      )
+
+  status:
+    bapMappings: |
+      (
+        $ctx := $.context;
+        $msg := $.message;
+
+        {
+          "context": {
+            "version": "2.0.0",
+            "action": $ctx.action,
+            "networkId": $ctx.domain,
+            "bapId": $ctx.bap_id,
+            "bapUri": $ctx.bap_uri,
+            "bppId": $ctx.bpp_id,
+            "bppUri": $ctx.bpp_uri,
+            "transactionId": $ctx.transaction_id,
+            "messageId": $ctx.message_id,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "contract": {
+              "id": $msg.order_id,
+              "commitments": [{
+                "status": {},
+                "resources": [],
+                "offer": {
+                  "id": "_",
+                  "resourceIds": []
+                }
+              }]
+            }
+          }
+        }
+      )
+
+    bppMappings: |
+      (
+        $ctx      := $.context;
+        $contract := $.message.contract;
+
+        {
+          "context": {
+            "version": "1.0.0",
+            "action": $ctx.action,
+            "domain": $ctx.networkId,
+            "bap_id": $ctx.bapId,
+            "bap_uri": $ctx.bapUri,
+            "bpp_id": $ctx.bppId,
+            "bpp_uri": $ctx.bppUri,
+            "transaction_id": $ctx.transactionId,
+            "message_id": $ctx.messageId,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "order_id": $contract.id
+          }
+        }
+      )
+
+  on_confirm:
+    bppMappings: |
+      (
+        $ctx     := $.context;
+        $order   := $.message.order;
+        $fuls    := $.message.order.fulfillments;
+        $personCtx      := "https://schema.beckn.io/Person/v2.0/context.jsonld";
+        $attribCtx      := "https://schema.beckn.io/Attributes/v2.0/context.jsonld";
+        $entitlementCtx := "https://schema.beckn.io/Attributes/v2.0/context.jsonld";
+        $priceCtx       := "https://schema.beckn.io/PriceSpecification/2.0/context.jsonld";
+
+        $toContractCode := function($v1Code) {
+          $v1Code = "Booking-Cancelled" ? "CLOSED" :
+          $v1Code = "Booking-Completed" ? "CLOSED" :
+          $v1Code = "Booking-Confirmed" ? "ACTIVE" : "DRAFT"
+        };
+
+        $primaryCode  := $fuls[0].state.descriptor.code;
+        $contractCode := $toContractCode($primaryCode);
+
+        $commitments := [$map($order.items, function($item) {(
+          $tags     := $item.tags;
+          $tbts     := $tags[descriptor.code = "target-beneficiary-type"].list;
+          $fms      := $tags[descriptor.code = "funding-model"].list;
+          $bens     := $tags[descriptor.code = "benefit"].list;
+          $sbens    := $tags[descriptor.code = "short-benefit"].list;
+          $docs     := $tags[descriptor.code = "required-docs"].list;
+          $econ     := $tags[descriptor.code = "economic-eligibility"].list;
+          $demo     := $tags[descriptor.code = "demographic-eligibility"].list;
+          $docsText          := $tags[descriptor.code = "documentsListText"].list[0].value;
+          $eligText          := $tags[descriptor.code = "eligibilityText"].list[0].value;
+          $knownTagCodes     := ["target-beneficiary-type", "funding-model", "benefit", "short-benefit", "required-docs", "economic-eligibility", "demographic-eligibility", "documentsListText", "eligibilityText"];
+          $unknownTags       := $filter($tags, function($tag) { $not($knownTagCodes[$ = $tag.descriptor.code]) });
+          $unknownTagEntries := $boolean($count($unknownTags)) ? $reduce($map($unknownTags, function($tag) { $map($tag.list, function($item) { $merge([{ "code": $tag.descriptor.code }, $item.value ? { "value": $item.value } : {}, $item.descriptor.code ? { "itemCode": $item.descriptor.code } : {}, $item.descriptor.name ? { "itemName": $item.descriptor.name } : {}]) }) }), $append, []) : [];
+          $scalarTags := $filter([
+            $item.rateable ? { "code": "rateable", "value": $string($item.rateable) } : null,
+            $exists($item.rating) ? { "code": "rating",   "value": $item.rating }            : null,
+            $exists($item.time.duration) ? { "code": "duration", "value": $item.time.duration } : null,
+            $docsText ? { "code": "documentsListText", "value": $docsText }   : null,
+            $eligText ? { "code": "eligibilityText",   "value": $eligText }   : null
+          ], function($t) { $type($t) != "null" });
+          $tbtTags  := $tbts  ? [$map($tbts,  function($t) {{ "code": "targetBeneficiaryType", "value": $t.descriptor.name, "valueCode": $t.descriptor.code }})] : [];
+          $fmTags   := $fms   ? [$map($fms,   function($f) { $merge([{ "code": "fundingModel", "value": $f.descriptor.name, "valueCode": $f.descriptor.code }, $exists($f.descriptor.longDescription) ? { "longDescription": $f.descriptor.longDescription } : {}]) })] : [];
+          $benTags  := $bens  ? $reduce($bens, function($acc, $b) { $append($acc, $append($b.descriptor.code ? [{ "code": "benefitFor", "value": $b.descriptor.code }] : [], $b.value ? [{ "code": "benefitValue", "value": $b.value }] : [])) }, []) : [];
+          $sbenTags := $sbens ? [$map($sbens, function($s) {{ "code": "shortBenefit", "value": $s.value }})] : [];
+          $catTags  := $item.category_ids ? [{ "code": "categoryIds", "values": $item.category_ids }] : [];
+          $locTags  := $item.location_ids ? [{ "code": "locationIds", "values": $item.location_ids }] : [];
+          $docTags  := $docs ? [$map($docs, function($doc) {(
+            $docType := $doc.descriptor.code = "mandatory-doc" ? "mandatory" :
+                        $doc.descriptor.code = "optional-doc"  ? "optional"  : "other";
+            $merge([
+              { "code": "requiredDoc", "value": $doc.value, "docType": $docType },
+              $doc.descriptor.short_description ? { "purpose": $doc.descriptor.short_description } : {}
+            ])
+          )})] : [];
+          $econTags := $econ ? [$map($econ, function($e) {(
+            $val := $e.value ? $replace($e.value, /^= /, "") : $e.value;
+            $merge([{ "code": "economicEligibility", "criterion": $e.descriptor.name, "value": $val }, $e.descriptor.code ? { "criterionCode": $e.descriptor.code } : {}])
+          )})] : [];
+          $demoTags := $demo ? [$map($demo, function($e) {(
+            $val := $e.value ? $replace($e.value, /^= /, "") : $e.value;
+            $merge([{ "code": "demographicEligibility", "criterion": $e.descriptor.name, "value": $val }, $e.descriptor.code ? { "criterionCode": $e.descriptor.code } : {}])
+          )})] : [];
+          $itemTags := $reduce([$scalarTags, $tbtTags, $fmTags, $benTags, $sbenTags, $catTags, $locTags, $docTags, $econTags, $demoTags, $unknownTagEntries], $append);
+          {
+            "id": "commitment-scheme-" & $item.id,
+            "status": { "descriptor": { "code": $contractCode } },
+            "resources": [{
+              "id": $item.id,
+              "quantity": 1,
+              "descriptor": {
+                "name": $item.descriptor.name,
+                "longDesc": $item.descriptor.long_desc
+              },
+              "resourceAttributes": {
+                "@context": $entitlementCtx,
+                "@type": "Attributes",
+                "entitlementIds": $append([], $itemTags)
+              }
+            }],
+            "offer": {
+              "id": "offer-scheme-" & $item.id,
+              "resourceIds": [$item.id],
+              "considerations": [{
+                "id": "consideration-scheme-" & $item.id & "-cost",
+                "status": { "code": $contractCode },
+                "considerationAttributes": $merge([
+                  { "@context": $priceCtx, "@type": "PriceSpecification", "currency": $item.price.currency },
+                  $item.price.value ? { "value": $number($item.price.value) } : {}
+                ])
+              }]
+            }
+          }
+        )})];
+
+        {
+          "context": {
+            "version": "2.0.0",
+            "action": $ctx.action,
+            "networkId": $ctx.domain,
+            "bapId": $ctx.bap_id,
+            "bapUri": $ctx.bap_uri,
+            "bppId": $ctx.bpp_id,
+            "bppUri": $ctx.bpp_uri,
+            "transactionId": $ctx.transaction_id,
+            "messageId": $ctx.message_id,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "contract": {
+              "id": $order.id,
+              "status": { "code": $contractCode },
+              "participants": $append(
+                [{
+                  "id": $order.provider.id,
+                  "descriptor": { "name": $order.provider.descriptor.name }
+                }],
+                [$map($fuls, function($f) {{
+                  "id": "applicant-" & $f.id,
+                  "descriptor": { "name": $f.customer.person.name },
+                  "participantAttributes": {
+                    "@context": $personCtx,
+                    "@type": "Person",
+                    "id": "applicant-" & $f.id,
+                    "name": $f.customer.person.name,
+                    "telephone": $f.customer.contact.phone,
+                    "personAttributes": {
+                      "gender": $f.customer.person.gender,
+                      "dob": $f.customer.person.dob
+                    }
+                  }
+                }})]
+              ),
+              "commitments": $commitments,
+              "performance": [$map($fuls, function($f) {{
+                "id": "perf-booking-" & $f.id,
+                "status": { "code": $f.state.descriptor.code, "name": $f.state.descriptor.name },
+                "commitmentIds": [$map($order.items, function($item) { "commitment-scheme-" & $item.id })],
+                "performanceAttributes": {
+                  "@context": $attribCtx,
+                  "@type": "Attributes",
+                  "visitType": $f.type,
+                  "agent": $f.agent,
+                  "locationGps": $f.stops[0].location.gps,
+                  "location": $f.stops ? {
+                    "geo": {
+                      "type": "Point",
+                      "coordinates": (
+                        $parts := $split($f.stops[0].location.gps, ",");
+                        [$number($trim($parts[1])), $number($trim($parts[0]))]
+                      )
+                    }
+                  } : {}
+                }
+              }})]
+            }
+          }
+        }
+      )
+
+    bapMappings: |
+      (
+        $ctx      := $.context;
+        $contract := $.message.contract;
+
+        $providerParticipant   := $contract.participants[0];
+        $applicantParticipants := $filter($contract.participants, function($p, $i) { $i > 0 });
+
+        {
+          "context": {
+            "version": "1.0.0",
+            "action": $ctx.action,
+            "domain": $ctx.networkId,
+            "bap_id": $ctx.bapId,
+            "bap_uri": $ctx.bapUri,
+            "bpp_id": $ctx.bppId,
+            "bpp_uri": $ctx.bppUri,
+            "transaction_id": $ctx.transactionId,
+            "message_id": $ctx.messageId,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "order": {
+              "id": $contract.id,
+              "provider": {
+                "id": $providerParticipant.id,
+                "descriptor": { "name": $providerParticipant.descriptor.name }
+              },
+              "items": [$map($contract.commitments, function($c) {(
+                $res      := $c.resources[0];
+                $attrs    := $res.resourceAttributes;
+                $rTags    := $attrs.entitlementIds;
+                $tbts     := $rTags[code = "targetBeneficiaryType"];
+                $fms      := $rTags[code = "fundingModel"];
+                $benFors  := $rTags[code = "benefitFor"];
+                $benVals  := $rTags[code = "benefitValue"];
+                $sBens    := $rTags[code = "shortBenefit"];
+                $docs     := $rTags[code = "requiredDoc"];
+                $econ     := $rTags[code = "economicEligibility"];
+                $demo     := $rTags[code = "demographicEligibility"];
+                $docsText := $rTags[code = "documentsListText"][0].value;
+                $eligText := $rTags[code = "eligibilityText"][0].value;
+                $catTag   := $rTags[code = "categoryIds" or code = "categoryId"][0];
+                $catIds   := $catTag.values ? $catTag.values : ($catTag.value ? [$catTag.value] : []);
+                $locs     := $rTags[code = "locationIds"][0].values;
+                $rateable          := $rTags[code = "rateable"][0].value;
+                $rating            := $rTags[code = "rating"][0].value;
+                $duration          := $rTags[code = "duration"][0].value;
+                $knownRTagCodes    := ["categoryId", "categoryIds", "locationIds", "fulfillmentIds", "targetBeneficiaryType", "fundingModel", "benefitFor", "benefitValue", "shortBenefit", "requiredDoc", "economicEligibility", "demographicEligibility", "documentsListText", "eligibilityText", "rateable", "rating", "duration"];
+                $unknownEntries    := $filter($rTags, function($e) { $not($knownRTagCodes[$ = $e.code]) });
+                $unknownCodes      := $distinct($unknownEntries.code);
+                $unknownTagsOut    := $boolean($count($unknownCodes)) ? [$map($unknownCodes, function($code) {{ "display": true, "descriptor": { "code": $code, "name": $code }, "list": [$map($unknownEntries[code = $code], function($e) { $merge([$exists($e.itemCode) ? { "descriptor": { "code": $e.itemCode, "name": $e.itemName ? $e.itemName : $e.itemCode } } : {}, $exists($e.value) ? { "value": $e.value } : {}, { "display": true }]) })] }})] : [];
+                $priceAttrs := $c.offer.considerations[0].considerationAttributes;
+                $priceCur := $priceAttrs.currency;
+                $priceVal := $priceAttrs.value;
+                $allTags := [
+                  $boolean($count($tbts)) ? {
+                    "display": true,
+                    "descriptor": { "code": "target-beneficiary-type", "name": "Target beneficiary type" },
+                    "list": [$map($tbts, function($t) {{ "descriptor": { "code": $t.valueCode, "name": $t.value }, "display": true }})]
+                  } : null,
+                  $boolean($count($fms)) ? {
+                    "display": true,
+                    "descriptor": { "code": "funding-model", "name": "Funding model" },
+                    "list": [$map($fms, function($f) {{ "descriptor": $merge([{ "code": $f.valueCode, "name": $f.value }, $exists($f.longDescription) ? { "longDescription": $f.longDescription } : {}]), "display": true }})]
+                  } : null,
+                  $boolean($count($benFors)) ? {
+                    "display": true,
+                    "descriptor": { "code": "benefit", "name": "Benefit" },
+                    "list": [$map($benFors, function($bf, $i) {{ "descriptor": { "code": $bf.value, "name": $bf.value }, "value": $benVals[$i].value, "display": true }})]
+                  } : null,
+                  $boolean($count($sBens)) ? {
+                    "display": true,
+                    "descriptor": { "code": "short-benefit", "name": "Short Benefit" },
+                    "list": [$map($sBens, function($s) {{ "descriptor": { "code": "short-benefit", "name": "Short Benefit" }, "value": $s.value, "display": true }})]
+                  } : null,
+                  $boolean($count($docs)) ? {
+                    "display": true,
+                    "descriptor": { "code": "required-docs", "name": "Required documents" },
+                    "list": [$map($docs, function($doc) {(
+                      $code  := $doc.docType = "mandatory" ? "mandatory-doc" :
+                                $doc.docType = "optional"  ? "optional-doc"  : "other-doc";
+                      $label := $doc.docType = "mandatory" ? "Mandatory document" :
+                                $doc.docType = "optional"  ? "Optional document"  : "Other document";
+                      $merge([{
+                        "descriptor": $merge([
+                          { "code": $code, "name": $label },
+                          $doc.purpose ? { "short_description": $doc.purpose } : {}
+                        ]),
+                        "value": $doc.value,
+                        "display": true
+                      }])
+                    )})]
+                  } : null,
+                  $docsText ? {
+                    "display": true,
+                    "descriptor": { "code": "documentsListText", "name": "documents List Text" },
+                    "list": [{ "descriptor": { "code": "documentsListText", "name": "documents List Text" }, "value": $docsText, "display": true }]
+                  } : null,
+                  $boolean($count($econ)) ? {
+                    "display": true,
+                    "descriptor": { "code": "economic-eligibility", "name": "Economic eligibility" },
+                    "list": [$map($econ, function($e) {(
+                      $val := $e.value ? ($substring($e.value, 0, 2) = ">=" or $substring($e.value, 0, 1) = "=" ? $e.value : "= " & $e.value) : $e.value;
+                      $merge([{
+                        "descriptor": $merge([$e.criterionCode ? { "code": $e.criterionCode } : { "code": "criterion" }, { "name": $e.criterion }]),
+                        "value": $val, "display": true
+                      }])
+                    )})]
+                  } : null,
+                  $boolean($count($demo)) ? {
+                    "display": true,
+                    "descriptor": { "code": "demographic-eligibility", "name": "Demographic eligibility" },
+                    "list": [$map($demo, function($e) {(
+                      $val := $e.value ? ($substring($e.value, 0, 2) = ">=" or $substring($e.value, 0, 1) = "=" ? $e.value : "= " & $e.value) : $e.value;
+                      $merge([{
+                        "descriptor": $merge([$e.criterionCode ? { "code": $e.criterionCode } : { "code": "criterion" }, { "name": $e.criterion }]),
+                        "value": $val, "display": true
+                      }])
+                    )})]
+                  } : null,
+                  $eligText ? {
+                    "display": true,
+                    "descriptor": { "code": "eligibilityText", "name": "eligibility Text" },
+                    "list": [{ "descriptor": { "code": "eligibilityText", "name": "eligibility Text" }, "value": $eligText, "display": true }]
+                  } : null
+                ];
+                {
+                  "id": $res.id,
+                  "descriptor": {
+                    "name": $res.descriptor.name,
+                    "long_desc": $res.descriptor.longDesc
+                  },
+                  "price": {
+                    "currency": $priceCur,
+                    "value": $string($priceVal)
+                  },
+                  "rateable": $rateable ? $boolean($rateable) : undefined,
+                  "tags": $append($filter($allTags, function($t) { $type($t) != "null" }), $unknownTagsOut),
+                  "category_ids": $catIds,
+                  "location_ids": $locs,
+                  "time": $exists($duration) ? { "duration": $duration } : undefined,
+                  "rating": $rating
+                }
+              )})],
+              "fulfillments": [$map($contract.performance, function($perf) {(
+                $fulfillmentId := $substringAfter($perf.id, "perf-booking-");
+                $applicant     := $applicantParticipants[id = "applicant-" & $fulfillmentId];
+                $attrs         := $applicant.participantAttributes;
+                $pAttrs        := $perf.performanceAttributes;
+                $coords        := $pAttrs.location.geo.coordinates;
+                $rawGps        := $pAttrs.locationGps;
+                {
+                  "id": $fulfillmentId,
+                  "type": $pAttrs.visitType,
+                  "customer": $attrs ? {
+                    "person": {
+                      "name": $attrs.name,
+                      "gender": $attrs.personAttributes.gender,
+                      "dob": $attrs.personAttributes.dob
+                    },
+                    "contact": { "phone": $attrs.telephone }
+                  } : {},
+                  "stops": ($rawGps or $coords) ? [{
+                    "location": {
+                      "gps": $rawGps ? $rawGps : ($string($coords[1]) & "," & $string($coords[0]))
+                    }
+                  }] : [],
+                  "agent": $pAttrs.agent,
+                  "state": {
+                    "descriptor": {
+                      "code": $perf.status.code,
+                      "name": $perf.status.name
+                    }
+                  }
+                }
+              )})]
+            }
+          }
+        }
+      )
+
+  on_status:
+    bppMappings: |
+      (
+        $ctx     := $.context;
+        $order   := $.message.order;
+        $fuls    := $.message.order.fulfillments;
+        $attribCtx      := "https://schema.beckn.io/Attributes/v2.0/context.jsonld";
+        $entitlementCtx := "https://schema.beckn.io/Attributes/v2.0/context.jsonld";
+        $priceCtx       := "https://schema.beckn.io/PriceSpecification/2.0/context.jsonld";
+
+        $statusCode     := $fuls[0].state.descriptor.code;
+        $statusDescName := $fuls[0].state.descriptor.name;
+
+        $toContractCode := function($v1Code) {
+          $v1Code = "Booking-Cancelled" ? "CLOSED" :
+          $v1Code = "Booking-Completed" ? "CLOSED" :
+          $v1Code = "Booking-Confirmed" ? "ACTIVE" : "DRAFT"
+        };
+        $contractCode := $toContractCode($statusCode);
+
+        $commitments := [$map($order.items, function($item) {(
+          $tags     := $item.tags;
+          $tbt      := $tags[descriptor.code = "target-beneficiary-type"].list[0];
+          $fm       := $tags[descriptor.code = "funding-model"].list[0];
+          $ben      := $tags[descriptor.code = "benefit"].list[0];
+          $sben     := $tags[descriptor.code = "short-benefit"].list[0];
+          $docs     := $tags[descriptor.code = "required-docs"].list;
+          $econ     := $tags[descriptor.code = "economic-eligibility"].list;
+          $demo     := $tags[descriptor.code = "demographic-eligibility"].list;
+          $docsText          := $tags[descriptor.code = "documentsListText"].list[0].value;
+          $eligText          := $tags[descriptor.code = "eligibilityText"].list[0].value;
+          $knownTagCodes     := ["target-beneficiary-type", "funding-model", "benefit", "short-benefit", "required-docs", "economic-eligibility", "demographic-eligibility", "documentsListText", "eligibilityText"];
+          $unknownTags       := $filter($tags, function($tag) { $not($knownTagCodes[$ = $tag.descriptor.code]) });
+          $unknownTagEntries := $boolean($count($unknownTags)) ? $reduce($map($unknownTags, function($tag) { $map($tag.list, function($item) { $merge([{ "code": $tag.descriptor.code }, $item.value ? { "value": $item.value } : {}, $item.descriptor.code ? { "itemCode": $item.descriptor.code } : {}, $item.descriptor.name ? { "itemName": $item.descriptor.name } : {}]) }) }), $append, []) : [];
+          $scalarTags := $filter([
+            $tbt  ? { "code": "targetBeneficiaryType", "value": $tbt.descriptor.name, "valueCode": $tbt.descriptor.code } : null,
+            $fm   ? $merge([{ "code": "fundingModel", "value": $fm.descriptor.name, "valueCode": $fm.descriptor.code }, $exists($fm.descriptor.longDescription) ? { "longDescription": $fm.descriptor.longDescription } : {}]) : null,
+            $ben  ? { "code": "benefitFor",   "value": $ben.descriptor.code } : null,
+            $ben  ? { "code": "benefitValue", "value": $ben.value }           : null,
+            $sben ? { "code": "shortBenefit", "value": $sben.value }          : null,
+            $item.rateable ? { "code": "rateable", "value": $string($item.rateable) } : null,
+            $exists($item.rating)        ? { "code": "rating",   "value": $item.rating }            : null,
+            $exists($item.time.duration) ? { "code": "duration", "value": $item.time.duration }     : null,
+            $docsText ? { "code": "documentsListText", "value": $docsText }   : null,
+            $eligText ? { "code": "eligibilityText",   "value": $eligText }   : null
+          ], function($t) { $type($t) != "null" });
+          $catTags  := $item.category_ids ? [{ "code": "categoryIds", "values": $item.category_ids }] : [];
+          $locTags  := $item.location_ids ? [{ "code": "locationIds", "values": $item.location_ids }] : [];
+          $docTags  := $docs ? [$map($docs, function($doc) {(
+            $docType := $doc.descriptor.code = "mandatory-doc" ? "mandatory" :
+                        $doc.descriptor.code = "optional-doc"  ? "optional"  : "other";
+            $merge([
+              { "code": "requiredDoc", "value": $doc.value, "docType": $docType },
+              $doc.descriptor.short_description ? { "purpose": $doc.descriptor.short_description } : {}
+            ])
+          )})] : [];
+          $econTags := $econ ? [$map($econ, function($e) {(
+            $val := $e.value ? $replace($e.value, /^= /, "") : $e.value;
+            $merge([{ "code": "economicEligibility", "criterion": $e.descriptor.name, "value": $val }, $e.descriptor.code ? { "criterionCode": $e.descriptor.code } : {}])
+          )})] : [];
+          $demoTags := $demo ? [$map($demo, function($e) {(
+            $val := $e.value ? $replace($e.value, /^= /, "") : $e.value;
+            $merge([{ "code": "demographicEligibility", "criterion": $e.descriptor.name, "value": $val }, $e.descriptor.code ? { "criterionCode": $e.descriptor.code } : {}])
+          )})] : [];
+          $itemTags := $reduce([$scalarTags, $tbtTags, $fmTags, $benTags, $sbenTags, $catTags, $locTags, $docTags, $econTags, $demoTags, $unknownTagEntries], $append);
+          {
+            "id": "commitment-scheme-" & $item.id,
+            "status": { "descriptor": { "code": $contractCode } },
+            "resources": [{
+              "id": $item.id,
+              "quantity": 1,
+              "descriptor": {
+                "name": $item.descriptor.name,
+                "longDesc": $item.descriptor.long_desc
+              },
+              "resourceAttributes": {
+                "@context": $entitlementCtx,
+                "@type": "Attributes",
+                "entitlementIds": $append([], $itemTags)
+              }
+            }],
+            "offer": {
+              "id": "offer-scheme-" & $item.id,
+              "resourceIds": [$item.id],
+              "considerations": [{
+                "id": "consideration-scheme-" & $item.id & "-cost",
+                "status": { "code": $contractCode },
+                "considerationAttributes": $merge([
+                  { "@context": $priceCtx, "@type": "PriceSpecification", "currency": $item.price.currency },
+                  $item.price.value ? { "value": $number($item.price.value) } : {}
+                ])
+              }]
+            }
+          }
+        )})];
+
+        {
+          "context": {
+            "version": "2.0.0",
+            "action": $ctx.action,
+            "networkId": $ctx.domain,
+            "bapId": $ctx.bap_id,
+            "bapUri": $ctx.bap_uri,
+            "bppId": $ctx.bpp_id,
+            "bppUri": $ctx.bpp_uri,
+            "transactionId": $ctx.transaction_id,
+            "messageId": $ctx.message_id,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "contract": {
+              "id": $order.id,
+              "status": { "code": $contractCode },
+              "participants": [{
+                "id": $order.provider.id,
+                "descriptor": { "name": $order.provider.descriptor.name }
+              }],
+              "commitments": $commitments,
+              "performance": [{
+                "id": "perf-status-" & $order.id,
+                "status": { "code": $statusCode, "name": $statusDescName },
+                "commitmentIds": [$map($order.items, function($item) { "commitment-scheme-" & $item.id })],
+                "performanceAttributes": {
+                  "@context": $attribCtx,
+                  "@type": "Attributes",
+                  "agent": $fuls[0].agent
+                }
+              }]
+            }
+          }
+        }
+      )
+
+    bapMappings: |
+      (
+        $ctx      := $.context;
+        $contract := $.message.contract;
+
+        $perf0   := $contract.performance[0];
+        $pAttrs0 := $perf0.performanceAttributes;
+
+        {
+          "context": {
+            "version": "1.0.0",
+            "action": $ctx.action,
+            "domain": $ctx.networkId,
+            "bap_id": $ctx.bapId,
+            "bap_uri": $ctx.bapUri,
+            "bpp_id": $ctx.bppId,
+            "bpp_uri": $ctx.bppUri,
+            "transaction_id": $ctx.transactionId,
+            "message_id": $ctx.messageId,
+            "timestamp": $ctx.timestamp,
+            "ttl": $ctx.ttl
+          },
+          "message": {
+            "order": {
+              "id": $contract.id,
+              "provider": {
+                "id": $contract.participants[0].id,
+                "descriptor": { "name": $contract.participants[0].descriptor.name }
+              },
+              "items": [$map($contract.commitments, function($c) {(
+                $res      := $c.resources[0];
+                $attrs    := $res.resourceAttributes;
+                $rTags    := $attrs.entitlementIds;
+                $tbts     := $rTags[code = "targetBeneficiaryType"];
+                $fms      := $rTags[code = "fundingModel"];
+                $benFors  := $rTags[code = "benefitFor"];
+                $benVals  := $rTags[code = "benefitValue"];
+                $sBens    := $rTags[code = "shortBenefit"];
+                $docs     := $rTags[code = "requiredDoc"];
+                $econ     := $rTags[code = "economicEligibility"];
+                $demo     := $rTags[code = "demographicEligibility"];
+                $docsText := $rTags[code = "documentsListText"][0].value;
+                $eligText := $rTags[code = "eligibilityText"][0].value;
+                $catTag   := $rTags[code = "categoryIds" or code = "categoryId"][0];
+                $catIds   := $catTag.values ? $catTag.values : ($catTag.value ? [$catTag.value] : []);
+                $locs     := $rTags[code = "locationIds"][0].values;
+                $rateable          := $rTags[code = "rateable"][0].value;
+                $rating            := $rTags[code = "rating"][0].value;
+                $duration          := $rTags[code = "duration"][0].value;
+                $knownRTagCodes    := ["categoryId", "categoryIds", "locationIds", "fulfillmentIds", "targetBeneficiaryType", "fundingModel", "benefitFor", "benefitValue", "shortBenefit", "requiredDoc", "economicEligibility", "demographicEligibility", "documentsListText", "eligibilityText", "rateable", "rating", "duration"];
+                $unknownEntries    := $filter($rTags, function($e) { $not($knownRTagCodes[$ = $e.code]) });
+                $unknownCodes      := $distinct($unknownEntries.code);
+                $unknownTagsOut    := $boolean($count($unknownCodes)) ? [$map($unknownCodes, function($code) {{ "display": true, "descriptor": { "code": $code, "name": $code }, "list": [$map($unknownEntries[code = $code], function($e) { $merge([$exists($e.itemCode) ? { "descriptor": { "code": $e.itemCode, "name": $e.itemName ? $e.itemName : $e.itemCode } } : {}, $exists($e.value) ? { "value": $e.value } : {}, { "display": true }]) })] }})] : [];
+                $priceAttrs := $c.offer.considerations[0].considerationAttributes;
+                $priceCur := $priceAttrs.currency;
+                $priceVal := $priceAttrs.value;
+                $allTags := [
+                  $boolean($count($tbts)) ? {
+                    "display": true,
+                    "descriptor": { "code": "target-beneficiary-type", "name": "Target beneficiary type" },
+                    "list": [$map($tbts, function($t) {{ "descriptor": { "code": $t.valueCode, "name": $t.value }, "display": true }})]
+                  } : null,
+                  $boolean($count($fms)) ? {
+                    "display": true,
+                    "descriptor": { "code": "funding-model", "name": "Funding model" },
+                    "list": [$map($fms, function($f) {{ "descriptor": $merge([{ "code": $f.valueCode, "name": $f.value }, $exists($f.longDescription) ? { "longDescription": $f.longDescription } : {}]), "display": true }})]
+                  } : null,
+                  $boolean($count($benFors)) ? {
+                    "display": true,
+                    "descriptor": { "code": "benefit", "name": "Benefit" },
+                    "list": [$map($benFors, function($bf, $i) {{ "descriptor": { "code": $bf.value, "name": $bf.value }, "value": $benVals[$i].value, "display": true }})]
+                  } : null,
+                  $boolean($count($sBens)) ? {
+                    "display": true,
+                    "descriptor": { "code": "short-benefit", "name": "Short Benefit" },
+                    "list": [$map($sBens, function($s) {{ "descriptor": { "code": "short-benefit", "name": "Short Benefit" }, "value": $s.value, "display": true }})]
+                  } : null,
+                  $boolean($count($docs)) ? {
+                    "display": true,
+                    "descriptor": { "code": "required-docs", "name": "Required documents" },
+                    "list": [$map($docs, function($doc) {(
+                      $code  := $doc.docType = "mandatory" ? "mandatory-doc" :
+                                $doc.docType = "optional"  ? "optional-doc"  : "other-doc";
+                      $label := $doc.docType = "mandatory" ? "Mandatory document" :
+                                $doc.docType = "optional"  ? "Optional document"  : "Other document";
+                      $merge([{
+                        "descriptor": $merge([
+                          { "code": $code, "name": $label },
+                          $doc.purpose ? { "short_description": $doc.purpose } : {}
+                        ]),
+                        "value": $doc.value,
+                        "display": true
+                      }])
+                    )})]
+                  } : null,
+                  $docsText ? {
+                    "display": true,
+                    "descriptor": { "code": "documentsListText", "name": "documents List Text" },
+                    "list": [{ "descriptor": { "code": "documentsListText", "name": "documents List Text" }, "value": $docsText, "display": true }]
+                  } : null,
+                  $boolean($count($econ)) ? {
+                    "display": true,
+                    "descriptor": { "code": "economic-eligibility", "name": "Economic eligibility" },
+                    "list": [$map($econ, function($e) {(
+                      $val := $e.value ? ($substring($e.value, 0, 2) = ">=" or $substring($e.value, 0, 1) = "=" ? $e.value : "= " & $e.value) : $e.value;
+                      $merge([{
+                        "descriptor": $merge([$e.criterionCode ? { "code": $e.criterionCode } : { "code": "criterion" }, { "name": $e.criterion }]),
+                        "value": $val, "display": true
+                      }])
+                    )})]
+                  } : null,
+                  $boolean($count($demo)) ? {
+                    "display": true,
+                    "descriptor": { "code": "demographic-eligibility", "name": "Demographic eligibility" },
+                    "list": [$map($demo, function($e) {(
+                      $val := $e.value ? ($substring($e.value, 0, 2) = ">=" or $substring($e.value, 0, 1) = "=" ? $e.value : "= " & $e.value) : $e.value;
+                      $merge([{
+                        "descriptor": $merge([$e.criterionCode ? { "code": $e.criterionCode } : { "code": "criterion" }, { "name": $e.criterion }]),
+                        "value": $val, "display": true
+                      }])
+                    )})]
+                  } : null,
+                  $eligText ? {
+                    "display": true,
+                    "descriptor": { "code": "eligibilityText", "name": "eligibility Text" },
+                    "list": [{ "descriptor": { "code": "eligibilityText", "name": "eligibility Text" }, "value": $eligText, "display": true }]
+                  } : null
+                ];
+                {
+                  "id": $res.id,
+                  "descriptor": {
+                    "name": $res.descriptor.name,
+                    "long_desc": $res.descriptor.longDesc
+                  },
+                  "price": {
+                    "currency": $priceCur,
+                    "value": $string($priceVal)
+                  },
+                  "rateable": $rateable ? $boolean($rateable) : undefined,
+                  "tags": $append($filter($allTags, function($t) { $type($t) != "null" }), $unknownTagsOut),
+                  "category_ids": $catIds,
+                  "location_ids": $locs,
+                  "time": $exists($duration) ? { "duration": $duration } : undefined,
+                  "rating": $rating
+                }
+              )})],
+              "fulfillments": [{
+                "agent": $pAttrs0.agent,
+                "state": {
+                  "descriptor": {
+                    "code": $perf0.status.code,
+                    "name": $perf0.status.name
+                  }
+                }
+              }]
+            }
+          }
+        }
+      )
