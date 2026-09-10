@@ -5,6 +5,11 @@
 #   - routingConfig paths point at ./config/routing/*.yaml (hardcoded local
 #     targets instead of the live registry, so nothing leaves the compose
 #     network except registry key lookups and schema fetches)
+#   - extendedSchema_enabled: "false" - the base v2 OpenAPI check (against
+#     protocol-specifications-v2/beckn.yaml) still runs; only the extra
+#     per-object @context fetches (schema.beckn.io/Attributes,
+#     /PriceSpecification, etc.) are skipped. Flip back to "true" once you
+#     have network access to schema.beckn.io, to validate those too.
 appName: "onix-local-bap"
 log:
   level: debug
@@ -74,7 +79,7 @@ modules:
             type: url
             location: https://raw.githubusercontent.com/beckn/protocol-specifications-v2/refs/tags/core-v2.0.0-lts/api/v2.0.0/beckn.yaml
             cacheTTL: "3600"
-            extendedSchema_enabled: "true"
+            extendedSchema_enabled: "false"
             extendedSchema_cacheTTL: "86400"
             extendedSchema_maxCacheSize: "100"
             extendedSchema_downloadTimeout: "30"
@@ -148,7 +153,7 @@ modules:
             type: url
             location: https://raw.githubusercontent.com/beckn/protocol-specifications-v2/refs/tags/core-v2.0.0-lts/api/v2.0.0/beckn.yaml
             cacheTTL: "3600"
-            extendedSchema_enabled: "true"
+            extendedSchema_enabled: "false"
             extendedSchema_cacheTTL: "86400"
             extendedSchema_maxCacheSize: "100"
             extendedSchema_downloadTimeout: "30"
