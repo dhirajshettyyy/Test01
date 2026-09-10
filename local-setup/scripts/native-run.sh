@@ -51,8 +51,13 @@ fi
 for role in bap bpp; do
   rm -rf "$NATIVE_DIR/$role/config"
   cp -r "$ROOT/config" "$NATIVE_DIR/$role/config"
-  rm -f "$NATIVE_DIR/$role/plugins"
-  ln -s "$ONIX_SRC/plugins" "$NATIVE_DIR/$role/plugins"
+  # beckn-onix's plugin manager walks pluginManager.root with
+  # filepath.WalkDir, which Lstats the root itself - a symlinked root is
+  # seen as a non-directory and never descended into, silently yielding an
+  # empty plugin set ("plugin cache not found" etc). Copy instead.
+  if [ ! -d "$NATIVE_DIR/$role/plugins" ]; then
+    cp -r "$ONIX_SRC/plugins" "$NATIVE_DIR/$role/plugins"
+  fi
 
   sed -i 's#redis:6379#127.0.0.1:6379#' "$NATIVE_DIR/$role/config/$role.yaml"
   sed -i 's#http://onix-bap:8081/#http://127.0.0.1:8081/#' "$NATIVE_DIR/$role/config/routing/"*.yaml
